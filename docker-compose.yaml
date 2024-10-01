@@ -1,0 +1,21 @@
+version: "3.8"
+
+volumes:
+  postgres-data:
+  redis-data:
+
+services:
+
+  psql:
+    container_name: sqlinjector.psql
+    image: postgres:alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sqlinjector
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
