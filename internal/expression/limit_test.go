@@ -25,14 +25,13 @@ func TestNewLimitFrom(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("expr=%s", tt.expr), func(t *testing.T) {
 			result, err := NewLimitFrom(tt.expr)
-			if (err != nil) != tt.err {
-				t.Errorf("unexpected error status: got %v, expected %v", err != nil, tt.err)
-			}
-			if !tt.err && len(result) != len(tt.expected) {
-				t.Errorf("unexpected result length: got %d, expected %d", len(result), len(tt.expected))
-			}
-			if !tt.err && len(result) > 0 && result[0].limit != tt.expected[0].limit {
-				t.Errorf("unexpected limit: got %d, expected %d", result[0].limit, tt.expected[0].limit)
+			require.Equal(t, err, tt.err)
+			require.NoError(t, err)
+			if !tt.err {
+				require.Equal(t, len(result), len(tt.expected))
+				if len(result) > 0 {
+					require.Equal(t, result[0].limit, tt.expected[0].limit)
+				}
 			}
 		})
 	}
