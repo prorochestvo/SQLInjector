@@ -2,44 +2,47 @@ package expression
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 var _ expression = &Offset{}
 
 func TestNewOffsetFrom(t *testing.T) {
-	tests := []struct {
-		expr     string
-		expected []*Offset
-		err      bool
-	}{
 
-		{"", []*Offset{}, false},
-		{"0", []*Offset{{offset: 0}}, false},
-		{"1", []*Offset{{offset: 1}}, false},
-		{"100", []*Offset{{offset: 100}}, false},
-		{"-1", nil, true},
-		{"abc", nil, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("expr=%s", tt.expr), func(t *testing.T) {
-			result, err := NewOffsetFrom(tt.expr)
-			if (err != nil) != tt.err {
-				t.Errorf("unexpected error status: got %v, expected %v", err != nil, tt.err)
-			}
-			if !tt.err && len(result) != len(tt.expected) {
-				t.Errorf("unexpected result length: got %d, expected %d", len(result), len(tt.expected))
-			}
-			if !tt.err && len(result) > 0 && result[0].offset != tt.expected[0].offset {
-				t.Errorf("unexpected offset: got %d, expected %d", result[0].offset, tt.expected[0].offset)
-			}
-		})
-	}
+	t.Run("EmptyString", func(t *testing.T) {
+		result, err := NewOffsetFrom("")
+		require.NoError(t, err)
+		require.Equal(t, 0, len(result))
+	})
+	t.Run("DefaultBehavior", func(t *testing.T) {
+		result, err := NewOffsetFrom("1")
+		require.NoError(t, err)
+		require.Equal(t, 1, len(result))
+		require.Equal(t, 1, result[0].offset)
+	})
+	t.Run("NegativeNumber", func(t *testing.T) {
+		_, err := NewOffsetFrom("-1")
+		require.Error(t, err)
+	})
+	t.Run("ZeroValue", func(t *testing.T) {
+		result, err := NewOffsetFrom("0")
+		require.NoError(t, err)
+		require.Equal(t, 1, len(result))
+		require.Equal(t, 0, result[0].offset)
+	})
+	t.Run("UnexpectedSymbols", func(t *testing.T) {
+		_, err := NewOffsetFrom("abc")
+		require.Error(t, err)
+	})
+	t.Run("NonDecimalBase", func(t *testing.T) {
+		_, err := NewOffsetFrom("1.5")
+		require.Error(t, err)
+	})
 }
 
 func TestNewOffset(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		value    int
 		expected int
 	}{
@@ -50,12 +53,10 @@ func TestNewOffset(t *testing.T) {
 		{100, 100},
 	}
 
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("value=%d", tt.value), func(t *testing.T) {
-			result := NewOffset(tt.value)
-			if result.offset != tt.expected {
-				t.Errorf("unexpected offset: got %d, expected %d", result.offset, tt.expected)
-			}
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("testCase=%d", testCase.value), func(t *testing.T) {
+			r := NewOffset(testCase.value)
+			require.Equal(t, testCase.expected, r.offset)
 		})
 	}
 }
