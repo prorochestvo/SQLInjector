@@ -9,40 +9,36 @@ import (
 var _ expression = &Limit{}
 
 func TestNewLimitFrom(t *testing.T) {
-	tests := []struct {
-		expr     string
-		expected []*Limit
-		err      bool
-	}{
-		{"", []*Limit{}, false},
-		{"0", []*Limit{{limit: 0}}, false},
-		{"1", []*Limit{{limit: 1}}, false},
-		{"10", []*Limit{{limit: 10}}, false},
-		{"-1", nil, true},
-		{"abc", nil, true},
-	}
 
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("expr=%s", tt.expr), func(t *testing.T) {
-			result, err := NewLimitFrom(tt.expr)
-			require.Equal(t, err, tt.err)
-			require.NoError(t, err)
-			if !tt.err {
-				require.Equal(t, len(result), len(tt.expected))
-				if len(result) > 0 {
-					require.Equal(t, result[0].limit, tt.expected[0].limit)
-				}
-			}
-		})
-	}
-
+	t.Run("EmptyString", func(t *testing.T) {
+		result, err := NewLimitFrom("") // This string
+		require.NoError(t, err)
+		require.Equal(t, 0, len(result))
+	})
 	t.Run("DefaultBehavior", func(t *testing.T) {
+		result, err := NewLimitFrom("1")
+
+		require.NoError(t, err)
+		require.Equal(t, 1, len(result))
+		require.Equal(t, 1, result[0].limit)
 	})
 	t.Run("NegativeNumber", func(t *testing.T) {
+		_, err := NewLimitFrom("-1")
+		require.Error(t, err)
+	})
+	t.Run("ZeroValue", func(t *testing.T) {
+		result, err := NewLimitFrom("0")
+		require.NoError(t, err)
+		require.Equal(t, 1, len(result))
+		require.Equal(t, 0, result[0].limit)
 	})
 	t.Run("UnexpectedSymbols", func(t *testing.T) {
+		_, err := NewLimitFrom("abc")
+		require.Error(t, err)
 	})
 	t.Run("NonDecimalBase", func(t *testing.T) {
+		_, err := NewLimitFrom("1.5")
+		require.Error(t, err)
 	})
 }
 
@@ -61,7 +57,6 @@ func TestNewLimit(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("TestCases%d", testCase.value), func(t *testing.T) {
 			r := NewLimit(testCase.value)
-			// TODO: REVIEW: could use this approach to test the value in all our tests
 			require.Equal(t, testCase.expected, r.limit)
 		})
 	}
