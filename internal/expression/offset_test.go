@@ -9,16 +9,15 @@ import (
 var _ expression = &Offset{}
 
 func TestNewOffsetFrom(t *testing.T) {
-
 	t.Run("EmptyString", func(t *testing.T) {
 		result, err := NewOffsetFrom("")
 		require.NoError(t, err)
-		require.Equal(t, 0, len(result))
+		require.Len(t, result, 0)
 	})
-	t.Run("DefaultBehavior", func(t *testing.T) {
+	t.Run("PositiveNumber", func(t *testing.T) {
 		result, err := NewOffsetFrom("1")
 		require.NoError(t, err)
-		require.Equal(t, 1, len(result))
+		require.Len(t, result, 1)
 		require.Equal(t, 1, result[0].offset)
 	})
 	t.Run("NegativeNumber", func(t *testing.T) {
@@ -28,7 +27,7 @@ func TestNewOffsetFrom(t *testing.T) {
 	t.Run("ZeroValue", func(t *testing.T) {
 		result, err := NewOffsetFrom("0")
 		require.NoError(t, err)
-		require.Equal(t, 1, len(result))
+		require.Len(t, result, 1)
 		require.Equal(t, 0, result[0].offset)
 	})
 	t.Run("UnexpectedSymbols", func(t *testing.T) {
@@ -46,7 +45,6 @@ func TestNewOffset(t *testing.T) {
 		value    int
 		expected int
 	}{
-
 		{-10, 0},
 		{0, 0},
 		{1, 1},
@@ -54,7 +52,7 @@ func TestNewOffset(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		t.Run(fmt.Sprintf("testCase=%d", testCase.value), func(t *testing.T) {
+		t.Run(fmt.Sprintf("TestCase:%d", testCase.value), func(t *testing.T) {
 			r := NewOffset(testCase.value)
 			require.Equal(t, testCase.expected, r.offset)
 		})
