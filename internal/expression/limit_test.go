@@ -9,17 +9,16 @@ import (
 var _ expression = &Limit{}
 
 func TestNewLimitFrom(t *testing.T) {
-
 	t.Run("EmptyString", func(t *testing.T) {
 		result, err := NewLimitFrom("") // This string
 		require.NoError(t, err)
-		require.Equal(t, 0, len(result))
+		require.Len(t, result, 0)
 	})
-	t.Run("DefaultBehavior", func(t *testing.T) {
+	t.Run("PositiveNumber", func(t *testing.T) {
 		result, err := NewLimitFrom("1")
 
 		require.NoError(t, err)
-		require.Equal(t, 1, len(result))
+		require.Len(t, result, 1)
 		require.Equal(t, 1, result[0].limit)
 	})
 	t.Run("NegativeNumber", func(t *testing.T) {
@@ -29,7 +28,7 @@ func TestNewLimitFrom(t *testing.T) {
 	t.Run("ZeroValue", func(t *testing.T) {
 		result, err := NewLimitFrom("0")
 		require.NoError(t, err)
-		require.Equal(t, 1, len(result))
+		require.Len(t, result, 1)
 		require.Equal(t, 0, result[0].limit)
 	})
 	t.Run("UnexpectedSymbols", func(t *testing.T) {
@@ -55,7 +54,7 @@ func TestNewLimit(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		t.Run(fmt.Sprintf("TestCases%d", testCase.value), func(t *testing.T) {
+		t.Run(fmt.Sprintf("TestCases:%d", testCase.value), func(t *testing.T) {
 			r := NewLimit(testCase.value)
 			require.Equal(t, testCase.expected, r.limit)
 		})
