@@ -57,7 +57,7 @@ func TestMigrater_State(t *testing.T) {
 	mALL := MultipleMigration(m1, m2, m3, m4, m5, m6, m7)
 
 	t.Run("PostgreSQL", func(t *testing.T) {
-		container, err := receptacle.NewPostgreSQL(20001, "test", "test", "test")
+		container, err := receptacle.NewPostgreSQL(20031, "test", "test", "test")
 		require.NoError(t, err)
 		require.NotNil(t, container)
 		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
@@ -84,7 +84,7 @@ func TestMigrater_State(t *testing.T) {
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(s, "; "))
 	})
 	t.Run("MySQL", func(t *testing.T) {
-		container, err := receptacle.NewMySQL(20002, "test", "test", "test")
+		container, err := receptacle.NewMySQL(20032, "test", "test", "test")
 		require.NoError(t, err)
 		require.NotNil(t, container)
 		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
@@ -151,7 +151,7 @@ func TestMigrater_Plan(t *testing.T) {
 	mALL := MultipleMigration(m1, m2, m3, m4, m5, m6, m7)
 
 	t.Run("PostgreSQL", func(t *testing.T) {
-		container, err := receptacle.NewPostgreSQL(20001, "test", "test", "test")
+		container, err := receptacle.NewPostgreSQL(20041, "test", "test", "test")
 		require.NoError(t, err)
 		require.NotNil(t, container)
 		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
@@ -173,7 +173,7 @@ func TestMigrater_Plan(t *testing.T) {
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(s, "; "))
 	})
 	t.Run("MySQL", func(t *testing.T) {
-		container, err := receptacle.NewMySQL(20002, "test", "test", "test")
+		container, err := receptacle.NewMySQL(20042, "test", "test", "test")
 		require.NoError(t, err)
 		require.NotNil(t, container)
 		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
@@ -257,7 +257,7 @@ func TestMigrater_Up(t *testing.T) {
 	}
 
 	t.Run("PostgreSQL", func(t *testing.T) {
-		container, err := receptacle.NewPostgreSQL(20001, "test", "test", "test")
+		container, err := receptacle.NewPostgreSQL(20051, "test", "test", "test")
 		require.NoError(t, err)
 		require.NotNil(t, container)
 		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
@@ -366,7 +366,7 @@ func TestMigrater_Down(t *testing.T) {
 	}
 
 	t.Run("PostgreSQL", func(t *testing.T) {
-		container, err := receptacle.NewPostgreSQL(20001, "test", "test", "test")
+		container, err := receptacle.NewPostgreSQL(20051, "test", "test", "test")
 		require.NoError(t, err)
 		require.NotNil(t, container)
 		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
