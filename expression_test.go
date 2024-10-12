@@ -1,4 +1,4 @@
-package sqlinjector
+package main
 
 import (
 	"fmt"
