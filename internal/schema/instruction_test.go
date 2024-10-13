@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"github.com/prorochestvo/sqlinjector/internal"
 	"github.com/stretchr/testify/require"
 	"github.com/twinj/uuid"
 	"github.com/volatiletech/null/v8"
@@ -120,7 +121,7 @@ func TestParseTableFields(t *testing.T) {
 		require.Equal(t, fieldTypeTime, tableFields["updated_at"])
 		require.Equal(t, fieldTypeNullTime, tableFields["deleted_at"])
 	})
-	t.Run("AllFieldTypes", func(t *testing.T) {
+	t.Run("Types", func(t *testing.T) {
 		o := struct {
 			FString            string             `boil:"f_string"`
 			FInt               int                `boil:"f_int"`
@@ -205,7 +206,7 @@ func TestParseTableFields(t *testing.T) {
 		require.Equal(t, fieldTypeNullBytes, tableFields["f_null_bytes"])
 		require.Equal(t, fieldTypeNullBool, tableFields["f_null_bool"])
 		require.Equal(t, fieldTypeNullTime, tableFields["f_null_time"])
-		require.Equal(t, fieldTypeBytes, tableFields["f_types_json"])
+		require.Equal(t, fieldTypeJson, tableFields["f_types_json"])
 		require.Equal(t, fieldTypeStringList, tableFields["f_types_string_array"])
 		require.Equal(t, fieldTypeBoolList, tableFields["f_types_bool_array"])
 		require.Equal(t, fieldTypeFloat64List, tableFields["f_types_float64_array"])
@@ -216,6 +217,166 @@ func TestParseTableFields(t *testing.T) {
 		require.Equal(t, fieldTypeNullDecimal, tableFields["f_types_null_decimal"])
 		require.Equal(t, fieldTypePoint, tableFields["f_pgeo_point"])
 		require.Equal(t, fieldTypeNullPoint, tableFields["f_pgeo_null_point"])
+	})
+	t.Run("ForSQLite3", func(t *testing.T) {
+		fields := map[string]fieldType{
+			string(fieldTypePointer):     fieldTypePointer,
+			string(fieldTypeString):      fieldTypeString,
+			string(fieldTypeInt):         fieldTypeInt,
+			string(fieldTypeUint):        fieldTypeUint,
+			string(fieldTypeInt8):        fieldTypeInt8,
+			string(fieldTypeUint8):       fieldTypeUint8,
+			string(fieldTypeInt16):       fieldTypeInt16,
+			string(fieldTypeUint16):      fieldTypeUint16,
+			string(fieldTypeInt32):       fieldTypeInt32,
+			string(fieldTypeUint32):      fieldTypeUint32,
+			string(fieldTypeInt64):       fieldTypeInt64,
+			string(fieldTypeUint64):      fieldTypeUint64,
+			string(fieldTypeFloat32):     fieldTypeFloat32,
+			string(fieldTypeFloat64):     fieldTypeFloat64,
+			string(fieldTypeJson):        fieldTypeJson,
+			string(fieldTypeBytes):       fieldTypeBytes,
+			string(fieldTypeBool):        fieldTypeBool,
+			string(fieldTypeTime):        fieldTypeTime,
+			string(fieldTypeNullString):  fieldTypeNullString,
+			string(fieldTypeNullInt):     fieldTypeNullInt,
+			string(fieldTypeNullUint):    fieldTypeNullUint,
+			string(fieldTypeNullInt8):    fieldTypeNullInt8,
+			string(fieldTypeNullUint8):   fieldTypeNullUint8,
+			string(fieldTypeNullInt16):   fieldTypeNullInt16,
+			string(fieldTypeNullUint16):  fieldTypeNullUint16,
+			string(fieldTypeNullInt32):   fieldTypeNullInt32,
+			string(fieldTypeNullUint32):  fieldTypeNullUint32,
+			string(fieldTypeNullInt64):   fieldTypeNullInt64,
+			string(fieldTypeNullUint64):  fieldTypeNullUint64,
+			string(fieldTypeNullFloat32): fieldTypeNullFloat32,
+			string(fieldTypeNullFloat64): fieldTypeNullFloat64,
+			string(fieldTypeNullJson):    fieldTypeNullJson,
+			string(fieldTypeNullBytes):   fieldTypeNullBytes,
+			string(fieldTypeNullBool):    fieldTypeNullBool,
+			string(fieldTypeNullTime):    fieldTypeNullTime,
+			string(fieldTypeStringList):  fieldTypeStringList,
+			string(fieldTypeBoolList):    fieldTypeBoolList,
+			string(fieldTypeFloat64List): fieldTypeFloat64List,
+			string(fieldTypeInt64List):   fieldTypeInt64List,
+			string(fieldTypeDecimalList): fieldTypeDecimalList,
+			string(fieldTypeDecimal):     fieldTypeDecimal,
+			string(fieldTypeNullDecimal): fieldTypeNullDecimal,
+			string(fieldTypePoint):       fieldTypePoint,
+			string(fieldTypeNullPoint):   fieldTypeNullPoint,
+		}
+		for fName, fType := range fields {
+			fTypeSQL, err := fType.toSqlType(internal.DialectSQLite3)
+			require.NoError(t, err, fName)
+			require.NotNil(t, fTypeSQL, fName)
+			t.Skip("not implemented for", fName)
+		}
+	})
+	t.Run("ForPostgreSQL", func(t *testing.T) {
+		fields := map[string]fieldType{
+			string(fieldTypePointer):     fieldTypePointer,
+			string(fieldTypeString):      fieldTypeString,
+			string(fieldTypeInt):         fieldTypeInt,
+			string(fieldTypeUint):        fieldTypeUint,
+			string(fieldTypeInt8):        fieldTypeInt8,
+			string(fieldTypeUint8):       fieldTypeUint8,
+			string(fieldTypeInt16):       fieldTypeInt16,
+			string(fieldTypeUint16):      fieldTypeUint16,
+			string(fieldTypeInt32):       fieldTypeInt32,
+			string(fieldTypeUint32):      fieldTypeUint32,
+			string(fieldTypeInt64):       fieldTypeInt64,
+			string(fieldTypeUint64):      fieldTypeUint64,
+			string(fieldTypeFloat32):     fieldTypeFloat32,
+			string(fieldTypeFloat64):     fieldTypeFloat64,
+			string(fieldTypeJson):        fieldTypeJson,
+			string(fieldTypeBytes):       fieldTypeBytes,
+			string(fieldTypeBool):        fieldTypeBool,
+			string(fieldTypeTime):        fieldTypeTime,
+			string(fieldTypeNullString):  fieldTypeNullString,
+			string(fieldTypeNullInt):     fieldTypeNullInt,
+			string(fieldTypeNullUint):    fieldTypeNullUint,
+			string(fieldTypeNullInt8):    fieldTypeNullInt8,
+			string(fieldTypeNullUint8):   fieldTypeNullUint8,
+			string(fieldTypeNullInt16):   fieldTypeNullInt16,
+			string(fieldTypeNullUint16):  fieldTypeNullUint16,
+			string(fieldTypeNullInt32):   fieldTypeNullInt32,
+			string(fieldTypeNullUint32):  fieldTypeNullUint32,
+			string(fieldTypeNullInt64):   fieldTypeNullInt64,
+			string(fieldTypeNullUint64):  fieldTypeNullUint64,
+			string(fieldTypeNullFloat32): fieldTypeNullFloat32,
+			string(fieldTypeNullFloat64): fieldTypeNullFloat64,
+			string(fieldTypeNullJson):    fieldTypeNullJson,
+			string(fieldTypeNullBytes):   fieldTypeNullBytes,
+			string(fieldTypeNullBool):    fieldTypeNullBool,
+			string(fieldTypeNullTime):    fieldTypeNullTime,
+			string(fieldTypeStringList):  fieldTypeStringList,
+			string(fieldTypeBoolList):    fieldTypeBoolList,
+			string(fieldTypeFloat64List): fieldTypeFloat64List,
+			string(fieldTypeInt64List):   fieldTypeInt64List,
+			string(fieldTypeDecimalList): fieldTypeDecimalList,
+			string(fieldTypeDecimal):     fieldTypeDecimal,
+			string(fieldTypeNullDecimal): fieldTypeNullDecimal,
+			string(fieldTypePoint):       fieldTypePoint,
+			string(fieldTypeNullPoint):   fieldTypeNullPoint,
+		}
+		for fName, fType := range fields {
+			fTypeSQL, err := fType.toSqlType(internal.DialectPostgreSQL)
+			require.NoError(t, err, fName)
+			require.NotNil(t, fTypeSQL, fName)
+			t.Skip("not implemented for", fName)
+		}
+	})
+	t.Run("FieldsForMySQL", func(t *testing.T) {
+		fields := map[string]fieldType{
+			string(fieldTypePointer):     fieldTypePointer,
+			string(fieldTypeString):      fieldTypeString,
+			string(fieldTypeInt):         fieldTypeInt,
+			string(fieldTypeUint):        fieldTypeUint,
+			string(fieldTypeInt8):        fieldTypeInt8,
+			string(fieldTypeUint8):       fieldTypeUint8,
+			string(fieldTypeInt16):       fieldTypeInt16,
+			string(fieldTypeUint16):      fieldTypeUint16,
+			string(fieldTypeInt32):       fieldTypeInt32,
+			string(fieldTypeUint32):      fieldTypeUint32,
+			string(fieldTypeInt64):       fieldTypeInt64,
+			string(fieldTypeUint64):      fieldTypeUint64,
+			string(fieldTypeFloat32):     fieldTypeFloat32,
+			string(fieldTypeFloat64):     fieldTypeFloat64,
+			string(fieldTypeJson):        fieldTypeJson,
+			string(fieldTypeBytes):       fieldTypeBytes,
+			string(fieldTypeBool):        fieldTypeBool,
+			string(fieldTypeTime):        fieldTypeTime,
+			string(fieldTypeNullString):  fieldTypeNullString,
+			string(fieldTypeNullInt):     fieldTypeNullInt,
+			string(fieldTypeNullUint):    fieldTypeNullUint,
+			string(fieldTypeNullInt8):    fieldTypeNullInt8,
+			string(fieldTypeNullUint8):   fieldTypeNullUint8,
+			string(fieldTypeNullInt16):   fieldTypeNullInt16,
+			string(fieldTypeNullUint16):  fieldTypeNullUint16,
+			string(fieldTypeNullInt32):   fieldTypeNullInt32,
+			string(fieldTypeNullUint32):  fieldTypeNullUint32,
+			string(fieldTypeNullInt64):   fieldTypeNullInt64,
+			string(fieldTypeNullUint64):  fieldTypeNullUint64,
+			string(fieldTypeNullFloat32): fieldTypeNullFloat32,
+			string(fieldTypeNullFloat64): fieldTypeNullFloat64,
+			string(fieldTypeNullJson):    fieldTypeNullJson,
+			string(fieldTypeNullBytes):   fieldTypeNullBytes,
+			string(fieldTypeNullBool):    fieldTypeNullBool,
+			string(fieldTypeNullTime):    fieldTypeNullTime,
+			string(fieldTypeStringList):  fieldTypeStringList,
+			string(fieldTypeBoolList):    fieldTypeBoolList,
+			string(fieldTypeFloat64List): fieldTypeFloat64List,
+			string(fieldTypeInt64List):   fieldTypeInt64List,
+			string(fieldTypeDecimalList): fieldTypeDecimalList,
+			string(fieldTypeDecimal):     fieldTypeDecimal,
+			string(fieldTypeNullDecimal): fieldTypeNullDecimal,
+			string(fieldTypePoint):       fieldTypePoint,
+			string(fieldTypeNullPoint):   fieldTypeNullPoint,
+		}
+		for fName, fType := range fields {
+			_, err := fType.toSqlType(internal.DialectMySQL)
+			require.Error(t, err, fName)
+		}
 	})
 }
 

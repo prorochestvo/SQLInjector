@@ -67,8 +67,8 @@ func (i *instruction) MD5() string {
 	return hex.EncodeToString(h)
 }
 
-// MakeTableInstructionForSQLite3 creates a migration instruction for SQLite3 database from a struct
-func MakeTableInstructionForSQLite3(tableName string, tableFields interface{}) (Instruction, error) {
+// MakeTableInstruction creates a migration instruction for SQLite3 database from a struct
+func MakeTableInstruction(tableName string, tableFields interface{}, dialect internal.Dialect) (Instruction, error) {
 	fields, err := parseTableFields(tableFields)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func MakeTableInstructionForSQLite3(tableName string, tableFields interface{}) (
 	f := make([]string, 0, len(fields))
 	for k, v := range fields {
 		var t string
-		t, err = v.toSqlType(internal.DialectSQLite3)
+		t, err = v.toSqlType(dialect)
 		if err != nil {
 			return nil, err
 		}
@@ -264,6 +264,7 @@ func parseTableFields(o interface{}) (map[string]fieldType, error) {
 		case reflect.Bool:
 			tableFields[columnName] = fieldTypeBool
 		case reflect.Slice, reflect.Array:
+			println(fmt.Sprintf("<<< parseTableFields: %s | %s | %s", columnName, fValue.Type().Elem().Kind(), fType.Type.String()))
 			switch fSliceKind := fValue.Type().Elem().Kind(); fSliceKind {
 			case reflect.String:
 				tableFields[columnName] = fieldTypeStringList
@@ -273,16 +274,21 @@ func parseTableFields(o interface{}) (map[string]fieldType, error) {
 				tableFields[columnName] = fieldTypeFloat64List
 			case reflect.Int64:
 				tableFields[columnName] = fieldTypeInt64List
-			case reflect.Uint8:
-				tableFields[columnName] = fieldTypeBytes
 			default:
 				switch fStructType := fType.Type.String(); fStructType {
 				case "[]byte", "[]uint8":
 					tableFields[columnName] = fieldTypeBytes
+				case "null.JSON":
+					tableFields[columnName] = fieldTypeNullJson
+				case "types.JSON":
+					tableFields[columnName] = fieldTypeJson
 				case "types.DecimalArray":
 					tableFields[columnName] = fieldTypeDecimalList
 				default:
-					return nil, fmt.Errorf("unsupported slice type %s of field %s | %s", fStructType, columnName, fSliceKind)
+					if fSliceKind != reflect.Uint8 {
+						return nil, fmt.Errorf("unsupported slice type %s of field %s | %s", fStructType, columnName, fSliceKind)
+					}
+					tableFields[columnName] = fieldTypeBytes
 				}
 			}
 		case reflect.Struct:
@@ -323,6 +329,8 @@ func parseTableFields(o interface{}) (map[string]fieldType, error) {
 				tableFields[columnName] = fieldTypeNullBool
 			case "null.Time":
 				tableFields[columnName] = fieldTypeNullTime
+			case "types.JSON":
+				tableFields[columnName] = fieldTypeJson
 			case "types.Decimal":
 				tableFields[columnName] = fieldTypeDecimal
 			case "types.NullDecimal":
@@ -362,9 +370,10 @@ const (
 	fieldTypeUint64      fieldType = "uint64"
 	fieldTypeFloat32     fieldType = "float32"
 	fieldTypeFloat64     fieldType = "float64"
+	fieldTypeJson        fieldType = "json"
+	fieldTypeBytes       fieldType = "bytes"
 	fieldTypeBool        fieldType = "bool"
 	fieldTypeTime        fieldType = "time"
-	fieldTypeBytes       fieldType = "bytes"
 	fieldTypeNullString  fieldType = "null.string"
 	fieldTypeNullInt     fieldType = "null.int"
 	fieldTypeNullUint    fieldType = "null.uint"
@@ -396,42 +405,45 @@ const (
 type fieldType string
 
 func (f fieldType) toSqlType(dialect internal.Dialect) (string, error) {
-	if dialect == internal.DialectSQLite3 {
+	switch dialect {
+	case internal.DialectSQLite3:
 		switch f {
 		case fieldTypePointer:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeString:
-			return "TEXT NOT NULL", nil
+			return "TEXT NOT NULL DEFAULT ''", nil
 		case fieldTypeInt:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeUint:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeInt8:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeUint8:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeInt16:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeUint16:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeInt32:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeUint32:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeInt64:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeUint64:
-			return "INTEGER NOT NULL", nil
+			return "INTEGER NOT NULL DEFAULT 0", nil
 		case fieldTypeFloat32:
-			return "REAL NOT NULL", nil
+			return "REAL NOT NULL DEFAULT 0.0", nil
 		case fieldTypeFloat64:
-			return "REAL NOT NULL", nil
-		case fieldTypeBool:
-			return "INTEGER NOT NULL", nil
-		case fieldTypeTime:
-			return "TEXT NOT NULL", nil
+			return "REAL NOT NULL DEFAULT 0.0", nil
+		case fieldTypeJson:
+			return "TEXT NOT NULL DEFAULT '{}'", nil
 		case fieldTypeBytes:
 			return "BLOB NOT NULL", nil
+		case fieldTypeBool:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeTime:
+			return "TEXT NOT NULL", nil
 		case fieldTypeNullString:
 			return "TEXT", nil
 		case fieldTypeNullInt:
@@ -484,6 +496,99 @@ func (f fieldType) toSqlType(dialect internal.Dialect) (string, error) {
 			return "TEXT", nil
 		case fieldTypeNullPoint:
 			return "TEXT", nil
+		default:
+			return "", fmt.Errorf("field type %s is not supported for %v", f, dialect)
+		}
+	case internal.DialectPostgreSQL:
+		switch f {
+		case fieldTypePointer:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeString:
+			return "TEXT NOT NULL DEFAULT ''", nil
+		case fieldTypeInt:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeUint:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeInt8:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeUint8:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeInt16:
+			return "SMALLINT NOT NULL DEFAULT 0", nil
+		case fieldTypeUint16:
+			return "SMALLINT NOT NULL DEFAULT 0", nil
+		case fieldTypeInt32:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeUint32:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeInt64:
+			return "BIGINT NOT NULL DEFAULT 0", nil
+		case fieldTypeUint64:
+			return "BIGINT NOT NULL DEFAULT 0", nil
+		case fieldTypeFloat32:
+			return "REAL NOT NULL DEFAULT 0.0", nil
+		case fieldTypeFloat64:
+			return "DOUBLE PRECISION NOT NULL DEFAULT 0.0", nil
+		case fieldTypeJson:
+			return "JSONB NOT NULL DEFAULT '{}'::JSONB", nil
+		case fieldTypeBool:
+			return "BOOLEAN NOT NULL DEFAULT FALSE", nil
+		case fieldTypeTime:
+			return "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP", nil
+		case fieldTypeBytes:
+			return "BLOB NOT NULL DEFAULT ''", nil
+		case fieldTypeNullString:
+			return "TEXT", nil
+		case fieldTypeNullInt:
+			return "INTEGER", nil
+		case fieldTypeNullUint:
+			return "INTEGER", nil
+		case fieldTypeNullInt8:
+			return "INTEGER", nil
+		case fieldTypeNullUint8:
+			return "INTEGER", nil
+		case fieldTypeNullInt16:
+			return "SMALLINT", nil
+		case fieldTypeNullUint16:
+			return "SMALLINT", nil
+		case fieldTypeNullInt32:
+			return "INTEGER", nil
+		case fieldTypeNullUint32:
+			return "INTEGER", nil
+		case fieldTypeNullInt64:
+			return "BIGINT", nil
+		case fieldTypeNullUint64:
+			return "BIGINT", nil
+		case fieldTypeNullFloat32:
+			return "REAL", nil
+		case fieldTypeNullFloat64:
+			return "DOUBLE PRECISION", nil
+		case fieldTypeNullJson:
+			return "JSONB", nil
+		case fieldTypeNullBytes:
+			return "SEIL", nil
+		case fieldTypeNullBool:
+			return "BOOLEAN", nil
+		case fieldTypeNullTime:
+			return "TIMESTAMPTZ", nil
+		case fieldTypeStringList:
+			return "TEXT[] NOT NULL DEFAULT '{}'::TEXT[]", nil
+		case fieldTypeBoolList:
+			return "BOOLEAN[] NOT NULL DEFAULT '{}'::BOOLEAN[]", nil
+		case fieldTypeFloat64List:
+			return "REAL[] NOT NULL DEFAULT '{}'::REAL[]", nil
+		case fieldTypeInt64List:
+			return "BIGINT[] NOT NULL DEFAULT '{}'::BIGINT[]", nil
+		case fieldTypeDecimalList:
+			return "DECIMAL[] NOT NULL DEFAULT '{}'::DECIMAL[]", nil
+		case fieldTypeDecimal:
+			return "DECIMAL NOT NULL DEFAULT 0", nil
+		case fieldTypeNullDecimal:
+			return "DECIMAL", nil
+		case fieldTypePoint:
+			return "INTEGER NOT NULL DEFAULT 0", nil
+		case fieldTypeNullPoint:
+			return "INTEGER", nil
 		default:
 			return "", fmt.Errorf("field type %s is not supported for %v", f, dialect)
 		}

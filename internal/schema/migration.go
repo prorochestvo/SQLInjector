@@ -146,6 +146,8 @@ func Up(m Instruction, c sqlConnection, tableName string) (err error) {
 			sqlScript = s.Up()
 		}
 
+		println("<<< sqlScript:", sqlScript)
+
 		err = insertMigrationTable(t, tableName, i.ID(), i.MD5())
 		if err != nil {
 			err = fmt.Errorf("failed to keep migration %s hash, reason: %w", i.ID(), err)

@@ -50,7 +50,7 @@ func NewPostgreSQL(port int, userLogin, userPassword, databaseName string) (*DBC
 	args = append(args, fmt.Sprintf("dbname=%s", databaseName))
 	args = append(args, "sslmode=disable")
 
-	db, err := sql.Open(string(internal.DialectPostgres), strings.Join(args, " "))
+	db, err := sql.Open(string(internal.DialectPostgreSQL), strings.Join(args, " "))
 	if err != nil || db == nil {
 		if err == nil {
 			err = errors.New("db handle is invalid")
@@ -69,7 +69,7 @@ func NewPostgreSQL(port int, userLogin, userPassword, databaseName string) (*DBC
 		return nil, err
 	}
 
-	return &DBContainer{DB: db, container: container}, nil
+	return &DBContainer{DB: db, container: container, dialect: internal.DialectPostgreSQL}, nil
 }
 
 func NewMySQL(port int, userLogin, userPassword, databaseName string) (*DBContainer, error) {
@@ -124,7 +124,7 @@ func NewMySQL(port int, userLogin, userPassword, databaseName string) (*DBContai
 		return nil, err
 	}
 
-	return &DBContainer{DB: db, container: container}, nil
+	return &DBContainer{DB: db, container: container, dialect: internal.DialectMySQL}, nil
 }
 
 func NewSQLite3() (*DBContainer, error) {
@@ -146,12 +146,17 @@ func NewSQLite3() (*DBContainer, error) {
 		return nil, err
 	}
 
-	return &DBContainer{DB: db, container: nil}, nil
+	return &DBContainer{DB: db, container: nil, dialect: internal.DialectSQLite3}, nil
 }
 
 type DBContainer struct {
-	*sql.DB
+	dialect   internal.Dialect
 	container *TestContainer
+	*sql.DB
+}
+
+func (e *DBContainer) Dialect() internal.Dialect {
+	return e.dialect
 }
 
 func (e *DBContainer) DataBase() *sql.DB {

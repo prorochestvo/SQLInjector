@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/hex"
 	"fmt"
+	"github.com/prorochestvo/sqlinjector/internal"
 	"github.com/prorochestvo/sqlinjector/internal/receptacle"
 	"github.com/prorochestvo/sqlinjector/internal/schema"
 	"github.com/stretchr/testify/require"
@@ -573,13 +574,13 @@ func TestNewMemoryMigration(t *testing.T) {
 func TestNewStructMigration(t *testing.T) {
 	m, err := NewStructMigration(struct {
 		ID int `boil:"id" `
-	}{}, "demo")
+	}{}, "demo", internal.DialectSQLite3)
 	unix := time.Now().UTC().Unix()
 	require.NoError(t, err)
 	require.NotNil(t, m)
 	require.Len(t, m, 1)
 	require.Equal(t, fmt.Sprintf("%d_demo_create", unix), m[0].ID())
-	require.Equal(t, "CREATE"+" TABLE IF NOT EXISTS demo (\n   id INTEGER NOT NULL PRIMARY KEY);", m[0].(instructionUp).Up())
+	require.Equal(t, "CREATE"+" TABLE IF NOT EXISTS demo (\n   id INTEGER NOT NULL DEFAULT 0 PRIMARY KEY);", m[0].(instructionUp).Up())
 	require.Equal(t, "DROP"+" TABLE IF EXISTS demo;", m[0].(instructionDown).Down())
 	require.Equal(t, makeMD5(m[0].(instructionUp).Up()+"\n"+m[0].(instructionDown).Down()), m[0].MD5())
 }

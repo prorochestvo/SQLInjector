@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"github.com/prorochestvo/sqlinjector/internal"
 	"github.com/prorochestvo/sqlinjector/internal/schema"
 	"hash/crc64"
 	"net/http"
@@ -205,8 +206,8 @@ func NewMemoryMigration(up, down string, id ...string) (Migration, error) {
 
 // NewStructMigration creates a new migration for SQLite3 database from a struct
 // The struct must be a pointer to a sqlboiler struct.
-func NewStructMigration(boil interface{}, table string) (Migration, error) {
-	items, err := schema.MakeTableInstructionForSQLite3(table, boil)
+func NewStructMigration(boil interface{}, table string, dialect internal.Dialect) (Migration, error) {
+	items, err := schema.MakeTableInstruction(table, boil, dialect)
 	if err != nil || items == nil {
 		if err == nil {
 			err = fmt.Errorf("error while creating table instruction for %s", table)
