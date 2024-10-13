@@ -8,12 +8,24 @@ import (
 	"time"
 )
 
-// NewConnection creates a new database session.
-func NewConnection(dialect internal.Dialect, source string, parameters ...Parameter) (*sql.DB, error) {
+func NewPostgreSQL(source string, parameters ...Parameter) (internal.Dispatcher, error) {
+	return openSqlDB(internal.DialectPostgreSQL, source, parameters...)
+}
+
+func NewMySQL(source string, parameters ...Parameter) (internal.Dispatcher, error) {
+	return openSqlDB(internal.DialectMySQL, source, parameters...)
+}
+
+func NewSQLite3(source string, parameters ...Parameter) (internal.Dispatcher, error) {
+	return openSqlDB(internal.DialectSQLite3, source, parameters...)
+}
+
+// openSqlDB creates a new database session.
+func openSqlDB(dialect internal.Dialect, source string, parameters ...Parameter) (internal.Dispatcher, error) {
 	db, err := sql.Open(string(dialect), source)
 	if err != nil || db == nil {
 		if err == nil {
-			err = errors.New("database handle is invalid")
+			err = fmt.Errorf("database %s handle is invalid", dialect)
 		}
 		return nil, err
 	}
@@ -33,30 +45,46 @@ func NewConnection(dialect internal.Dialect, source string, parameters ...Parame
 	return db, err
 }
 
-// ConnectionStats returns database statistics.
-func ConnectionStats(db *sql.DB) string {
-	state := db.Stats()
+// Stats returns database statistics.
+func Stats(d internal.Dispatcher) string {
+	res := ""
 
-	tmp := ""
-	tmp += fmt.Sprintf("Connections: %d / %d; ", state.OpenConnections, state.MaxOpenConnections)
-	tmp += fmt.Sprintf("InUse: %v (idle: %d / %d); ", state.InUse, state.Idle, state.MaxIdleClosed)
-	tmp += fmt.Sprintf("WaitCount: %d; ", state.WaitCount)
-	tmp += fmt.Sprintf("WaitDuration: %s; ", state.WaitDuration)
-	tmp += fmt.Sprintf("MaxIdleTimeClosed: %v;", state.MaxIdleTimeClosed)
+	if i, ok := d.(interface {
+		Stats() sql.DBStats
+	}); ok && i != nil {
+		state := i.Stats()
+		res += fmt.Sprintf("Connections: %d / %d; ", state.OpenConnections, state.MaxOpenConnections)
+		res += fmt.Sprintf("InUse: %v (idle: %d / %d); ", state.InUse, state.Idle, state.MaxIdleClosed)
+		res += fmt.Sprintf("WaitCount: %d; ", state.WaitCount)
+		res += fmt.Sprintf("WaitDuration: %s; ", state.WaitDuration)
+		res += fmt.Sprintf("MaxIdleTimeClosed: %v;", state.MaxIdleTimeClosed)
+	}
 
-	return tmp
+	return res
 }
 
-// ConnectionBurden returns database capacity of connections.
-func ConnectionBurden(db *sql.DB) float64 {
-	state := db.Stats()
-	return float64(state.OpenConnections) * 100 / max(1, float64(state.MaxOpenConnections))
+// Burden returns database capacity of connections.
+func Burden(d internal.Dispatcher) float64 {
+	res := 0.0
+
+	if i, ok := d.(interface {
+		Stats() sql.DBStats
+	}); ok && i != nil {
+		state := i.Stats()
+		res = float64(state.OpenConnections) * 100 / max(1, float64(state.MaxOpenConnections))
+	}
+
+	return res
 }
 
 // ConnectionMaxLifetime sets the maximum amount of time a connection may be reused.
 func ConnectionMaxLifetime(duration time.Duration) Parameter {
-	f := func(db *sql.DB) error {
-		db.SetConnMaxLifetime(duration)
+	f := func(db interface{}) error {
+		if i, ok := db.(interface {
+			SetConnMaxLifetime(d time.Duration)
+		}); ok && i != nil {
+			i.SetConnMaxLifetime(duration)
+		}
 		return nil
 	}
 	p := parameter(f)
@@ -65,8 +93,12 @@ func ConnectionMaxLifetime(duration time.Duration) Parameter {
 
 // ConnectionMaxIdleTime sets the maximum amount of time a connection may be idle.
 func ConnectionMaxIdleTime(duration time.Duration) Parameter {
-	f := func(db *sql.DB) error {
-		db.SetConnMaxIdleTime(duration)
+	f := func(db interface{}) error {
+		if i, ok := db.(interface {
+			SetConnMaxIdleTime(d time.Duration)
+		}); ok && i != nil {
+			i.SetConnMaxIdleTime(duration)
+		}
 		return nil
 	}
 	p := parameter(f)
@@ -75,8 +107,12 @@ func ConnectionMaxIdleTime(duration time.Duration) Parameter {
 
 // MaxIdleConnection sets the maximum number of idle connections in the database pool.
 func MaxIdleConnection(limit int) Parameter {
-	f := func(db *sql.DB) error {
-		db.SetMaxIdleConns(limit)
+	f := func(db interface{}) error {
+		if i, ok := db.(interface {
+			SetMaxIdleConns(n int)
+		}); ok && i != nil {
+			i.SetMaxIdleConns(limit)
+		}
 		return nil
 	}
 	p := parameter(f)
@@ -85,8 +121,12 @@ func MaxIdleConnection(limit int) Parameter {
 
 // MaxOpenConnection sets the maximum number of open connections to the database pool.
 func MaxOpenConnection(limit int) Parameter {
-	f := func(db *sql.DB) error {
-		db.SetMaxOpenConns(limit)
+	f := func(db interface{}) error {
+		if i, ok := db.(interface {
+			SetMaxOpenConns(n int)
+		}); ok && i != nil {
+			i.SetMaxOpenConns(limit)
+		}
 		return nil
 	}
 	p := parameter(f)
@@ -95,11 +135,11 @@ func MaxOpenConnection(limit int) Parameter {
 
 // Parameter is a database connection parameter.
 type Parameter interface {
-	Apply(*sql.DB) error
+	Apply(internal.Dispatcher) error
 }
 
-type parameter func(*sql.DB) error
+type parameter func(interface{}) error
 
-func (p *parameter) Apply(db *sql.DB) error {
+func (p *parameter) Apply(db internal.Dispatcher) error {
 	return (*p)(db)
 }

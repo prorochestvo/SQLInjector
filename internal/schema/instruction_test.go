@@ -76,13 +76,13 @@ func TestParseMigration(t *testing.T) {
 		require.Equal(t, mDown01+"\n\n"+mDown02, m.down)
 	})
 	t.Run("Empty", func(t *testing.T) {
-		t.Skip("")
+		t.Skip("not implemented")
 	})
 	t.Run("UpEmptyOnly", func(t *testing.T) {
-		t.Skip("")
+		t.Skip("not implemented")
 	})
 	t.Run("DownEmptyOnly", func(t *testing.T) {
-		t.Skip("")
+		t.Skip("not implemented")
 	})
 }
 

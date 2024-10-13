@@ -2,12 +2,11 @@ package sqlinjector
 
 import (
 	"crypto/md5"
-	"database/sql"
 	"embed"
 	"encoding/hex"
 	"fmt"
 	"github.com/prorochestvo/sqlinjector/internal"
-	"github.com/prorochestvo/sqlinjector/internal/receptacle"
+	"github.com/prorochestvo/sqlinjector/internal/sandbox"
 	"github.com/prorochestvo/sqlinjector/internal/schema"
 	"github.com/stretchr/testify/require"
 	"github.com/twinj/uuid"
@@ -47,6 +46,10 @@ func TestNewMigrater(t *testing.T) {
 }
 
 func TestMigrater_State(t *testing.T) {
+	pool := sandbox.NewPool()
+	require.NotNil(t, pool)
+	defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(pool)
+
 	m1, _ := NewMemoryMigration("CREATE TABLE M1 (m1_id VARCHAR(250));", "DROP TABLE"+" M1;", "m0001")
 	m2, _ := NewMemoryMigration("CREATE TABLE M2 (m1_id VARCHAR(250));", "DROP TABLE"+" M2;", "m0002")
 	m3, _ := NewMemoryMigration("CREATE TABLE M3 (m1_id VARCHAR(250));", "DROP TABLE"+" M3;", "m0003")
@@ -58,18 +61,18 @@ func TestMigrater_State(t *testing.T) {
 	mALL := MultipleMigration(m1, m2, m3, m4, m5, m6, m7)
 
 	t.Run("PostgreSQL", func(t *testing.T) {
-		container, err := receptacle.NewPostgreSQL(20031, "test", "test", "test")
+		db, err := pool.NewPostgreSQL(20000)
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
 		mERR, _ := NewMemoryMigration("CREATE TABLE M4 (m1_id TEXT);", "", "m0004")
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(container.DB))
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(db))
 
 		migrater := NewMigrater(mALL)
 		require.NotNil(t, migrater)
 
-		s, err := migrater.State(container.DB)
+		s, err := migrater.State(db)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 
@@ -85,18 +88,18 @@ func TestMigrater_State(t *testing.T) {
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(s, "; "))
 	})
 	t.Run("MySQL", func(t *testing.T) {
-		container, err := receptacle.NewMySQL(20032, "test", "test", "test")
+		db, err := pool.NewMySQL(20000)
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
 		mERR, _ := NewMemoryMigration("CREATE TABLE M4 (m1_id VARCHAR(200));", "", "m0004")
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(container.DB))
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(db))
 
 		migrater := NewMigrater(mALL)
 		require.NotNil(t, migrater)
 
-		s, err := migrater.State(container.DB)
+		s, err := migrater.State(db)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 
@@ -112,18 +115,18 @@ func TestMigrater_State(t *testing.T) {
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(s, "; "))
 	})
 	t.Run("SQLite", func(t *testing.T) {
-		container, err := receptacle.NewSQLite3()
+		db, err := poll.NewSQLite3()
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
 		mERR, _ := NewMemoryMigration("CREATE TABLE M4 (m1_id TEXT);", "", "m0004")
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(container.DB))
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(db))
 
 		migrater := NewMigrater(mALL)
 		require.NotNil(t, migrater)
 
-		s, err := migrater.State(container.DB)
+		s, err := migrater.State(db)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 
@@ -141,6 +144,10 @@ func TestMigrater_State(t *testing.T) {
 }
 
 func TestMigrater_Plan(t *testing.T) {
+	pool := sandbox.NewPool()
+	require.NotNil(t, pool)
+	defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(pool)
+
 	m1, _ := NewMemoryMigration("CREATE TABLE M1 (m1_id VARCHAR(250));", "DROP TABLE"+" M1;", "m0001")
 	m2, _ := NewMemoryMigration("CREATE TABLE M2 (m1_id VARCHAR(250));", "DROP TABLE"+" M2;", "m0002")
 	m3, _ := NewMemoryMigration("CREATE TABLE M3 (m1_id VARCHAR(250));", "DROP TABLE"+" M3;", "m0003")
@@ -152,18 +159,18 @@ func TestMigrater_Plan(t *testing.T) {
 	mALL := MultipleMigration(m1, m2, m3, m4, m5, m6, m7)
 
 	t.Run("PostgreSQL", func(t *testing.T) {
-		container, err := receptacle.NewPostgreSQL(20041, "test", "test", "test")
+		db, err := poll.NewPostgreSQL(20000)
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
 		mERR, _ := NewMemoryMigration("CREATE TABLE M4 (m1_id TEXT);", "", "m0004")
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(container.DB))
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(db))
 
 		migrater := NewMigrater(mALL)
 		require.NotNil(t, migrater)
 
-		s, err := migrater.Plan(container.DB)
+		s, err := migrater.Plan(db)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 
@@ -174,18 +181,18 @@ func TestMigrater_Plan(t *testing.T) {
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(s, "; "))
 	})
 	t.Run("MySQL", func(t *testing.T) {
-		container, err := receptacle.NewMySQL(20042, "test", "test", "test")
+		db, err := poll.NewMySQL(20000)
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
 		mERR, _ := NewMemoryMigration("CREATE TABLE M4 (m1_id VARCHAR(200));", "", "m0004")
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(container.DB))
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(db))
 
 		migrater := NewMigrater(mALL)
 		require.NotNil(t, migrater)
 
-		s, err := migrater.Plan(container.DB)
+		s, err := migrater.Plan(db)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 
@@ -196,18 +203,18 @@ func TestMigrater_Plan(t *testing.T) {
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(s, "; "))
 	})
 	t.Run("SQLite", func(t *testing.T) {
-		container, err := receptacle.NewSQLite3()
+		db, err := pool.NewSQLite3()
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
 		mERR, _ := NewMemoryMigration("CREATE TABLE M4 (m1_id TEXT);", "", "m0004")
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(container.DB))
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, mERR, m5, m7)).Up(db))
 
 		migrater := NewMigrater(mALL)
 		require.NotNil(t, migrater)
 
-		s, err := migrater.Plan(container.DB)
+		s, err := migrater.Plan(db)
 		require.NoError(t, err)
 		require.NotNil(t, s)
 
@@ -220,6 +227,10 @@ func TestMigrater_Plan(t *testing.T) {
 }
 
 func TestMigrater_Up(t *testing.T) {
+	pool := sandbox.NewPool()
+	require.NotNil(t, pool)
+	defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(pool)
+
 	v1 := "V001"
 	v2 := "V002"
 	v3 := "V003"
@@ -239,11 +250,11 @@ func TestMigrater_Up(t *testing.T) {
 
 	mALL := MultipleMigration(m1, m2, m3, m4, m5, m6, m7)
 
-	extractActualIDs := func(t *testing.T, db *sql.DB) []string {
-		rows, err := db.Query("SELECT id FROM" + " " + table + " ORDER BY id;")
+	extractActualIDs := func(t *testing.T, d internal.Dispatcher) []string {
+		rows, err := d.Query("SELECT id FROM" + " " + table + " ORDER BY id;")
 		require.NoError(t, err)
 		require.NotNil(t, rows)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(rows)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(rows)
 
 		res := []string{}
 
@@ -258,77 +269,81 @@ func TestMigrater_Up(t *testing.T) {
 	}
 
 	t.Run("PostgreSQL", func(t *testing.T) {
-		container, err := receptacle.NewPostgreSQL(20051, "test", "test", "test")
+		db, err := pool.NewPostgreSQL(20000)
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
-		require.NoError(t, NewMigrater(m0).Up(container.DB))
+		require.NoError(t, NewMigrater(m0).Up(db))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, m5, m7)).Up(container.DB))
-		actually := extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, m5, m7)).Up(db))
+		actually := extractActualIDs(t, db)
 		expected := []string{v1, v3, v5, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Up(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Up(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Up(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Up(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 	})
 	t.Run("MySQL", func(t *testing.T) {
-		container, err := receptacle.NewMySQL(20002, "test", "test", "test")
+		db, err := pool.NewMySQL(20000)
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
-		require.NoError(t, NewMigrater(m0).Up(container.DB))
+		require.NoError(t, NewMigrater(m0).Up(db))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, m5, m7)).Up(container.DB))
-		actually := extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, m5, m7)).Up(db))
+		actually := extractActualIDs(t, db)
 		expected := []string{v1, v3, v5, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Up(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Up(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Up(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Up(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 	})
 	t.Run("SQLite", func(t *testing.T) {
-		container, err := receptacle.NewSQLite3()
+		db, err := pool.NewSQLite3()
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
-		require.NoError(t, NewMigrater(m0).Up(container.DB))
+		require.NoError(t, NewMigrater(m0).Up(db))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, m5, m7)).Up(container.DB))
-		actually := extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m1, m3, m5, m7)).Up(db))
+		actually := extractActualIDs(t, db)
 		expected := []string{v1, v3, v5, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Up(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Up(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Up(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Up(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 	})
 }
 
 func TestMigrater_Down(t *testing.T) {
+	pool := sandbox.NewPool()
+	require.NotNil(t, pool)
+	defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(pool)
+
 	v1 := "V001"
 	v2 := "V002"
 	v3 := "V003"
@@ -348,11 +363,11 @@ func TestMigrater_Down(t *testing.T) {
 
 	mALL := MultipleMigration(m1, m2, m3, m4, m5, m6, m7)
 
-	extractActualIDs := func(t *testing.T, db *sql.DB) []string {
-		rows, err := db.Query("SELECT id FROM" + " " + table + " ORDER BY id;")
+	extractActualIDs := func(t *testing.T, d internal.Dispatcher) []string {
+		rows, err := d.Query("SELECT id FROM" + " " + table + " ORDER BY id;")
 		require.NoError(t, err)
 		require.NotNil(t, rows)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(rows)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(rows)
 
 		res := []string{}
 
@@ -367,155 +382,155 @@ func TestMigrater_Down(t *testing.T) {
 	}
 
 	t.Run("PostgreSQL", func(t *testing.T) {
-		container, err := receptacle.NewPostgreSQL(20051, "test", "test", "test")
+		db, err := pool.NewPostgreSQL(20000)
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
-		require.NoError(t, NewMigrater(MultipleMigration(m0, mALL)).Up(container.DB))
-		actually := extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m0, mALL)).Up(db))
+		actually := extractActualIDs(t, db)
 		expected := []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 	})
 	t.Run("MySQL", func(t *testing.T) {
-		container, err := receptacle.NewMySQL(20002, "test", "test", "test")
+		db, err := pool.NewMySQL(20000)
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
-		require.NoError(t, NewMigrater(MultipleMigration(m0, mALL)).Up(container.DB))
-		actually := extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m0, mALL)).Up(db))
+		actually := extractActualIDs(t, db)
 		expected := []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 	})
 	t.Run("SQLite", func(t *testing.T) {
-		container, err := receptacle.NewSQLite3()
+		db, err := pool.NewSQLite3()
 		require.NoError(t, err)
-		require.NotNil(t, container)
-		defer func(c io.Closer) { require.NoError(t, c.Close()) }(container)
+		require.NotNil(t, db)
+		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(db)
 
-		require.NoError(t, NewMigrater(MultipleMigration(m0, mALL)).Up(container.DB))
-		actually := extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m0, mALL)).Up(db))
+		actually := extractActualIDs(t, db)
 		expected := []string{v1, v2, v3, v4, v5, v6, v7}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5, v6}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4, v5}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3, v4}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2, v3}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1, v2}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{v1}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(mALL).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(mALL).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 
-		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Down(container.DB))
-		actually = extractActualIDs(t, container.DB)
+		require.NoError(t, NewMigrater(MultipleMigration(m2, m4, m6, m7)).Down(db))
+		actually = extractActualIDs(t, db)
 		expected = []string{}
 		require.Equal(t, strings.Join(expected, "; "), strings.Join(actually, "; "))
 	})

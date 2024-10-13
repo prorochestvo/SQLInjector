@@ -10,7 +10,7 @@ import (
 )
 
 // Rollback executes and rollbacks the given actions in the one transaction of the given options.
-func Rollback(ctx context.Context, d dispatcher, a actions) (res interface{}, err error) {
+func Rollback(ctx context.Context, d internal.Dispatcher, a actions) (res interface{}, err error) {
 	t, err := d.BeginTx(ctx, nil)
 	if err != nil {
 		return
@@ -28,7 +28,7 @@ func Rollback(ctx context.Context, d dispatcher, a actions) (res interface{}, er
 }
 
 // Commit executes and commits the given actions in the one transaction of the given options.
-func Commit(ctx context.Context, d dispatcher, a actions) (res interface{}, err error) {
+func Commit(ctx context.Context, d internal.Dispatcher, a actions) (res interface{}, err error) {
 	t, err := d.BeginTx(ctx, nil)
 	if err != nil {
 		return
@@ -75,9 +75,4 @@ func ignoreChanges(t internal.Transaction) error {
 		return err
 	}
 	return nil
-}
-
-type dispatcher interface {
-	internal.Dispatcher
-	internal.DispatcherEx
 }
