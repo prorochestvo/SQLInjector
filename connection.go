@@ -1,4 +1,4 @@
-package main
+package sqlinjector
 
 import (
 	"database/sql"

@@ -1,4 +1,4 @@
-package main
+package sqlinjector
 
 import (
 	"github.com/prorochestvo/sqlinjector/internal/expression"
