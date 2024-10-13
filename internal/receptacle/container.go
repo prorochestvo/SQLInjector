@@ -3,15 +3,94 @@ package receptacle
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"strings"
 	"sync"
 	"time"
 )
 
-func NewTestContainers(image string, ports []string, env map[string]string, waitPorts ...string) (tc *TestContainer, err error) {
+func RunPostgreSqlContainer(port int, userLogin, userPassword, databaseName string) (*TestContainer, string, error) {
+	defaultPort := 5432
+	exposedPort := ""
+	if defaultPort == port {
+		exposedPort = fmt.Sprintf("%d/tcp", port)
+	} else {
+		exposedPort = fmt.Sprintf("%d:%d", port, defaultPort)
+	}
+	internalPort := fmt.Sprintf("%d/tcp", defaultPort)
+
+	container, err := RunTestContainer(
+		"postgres:latest",
+		[]string{exposedPort},
+		map[string]string{
+			"POSTGRES_USER":     userLogin,
+			"POSTGRES_PASSWORD": userPassword,
+			"POSTGRES_DB":       databaseName,
+		},
+		internalPort,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	cHost, cPort, err := container.MappedHostPort(internalPort)
+	if err != nil {
+		err = errors.Join(err, container.Close())
+		return nil, "", err
+	}
+
+	args := make([]string, 0, 5)
+	args = append(args, fmt.Sprintf("host=%s", cHost))
+	args = append(args, fmt.Sprintf("port=%s", cPort))
+	args = append(args, fmt.Sprintf("user=%s", userLogin))
+	args = append(args, fmt.Sprintf("password=%s", userPassword))
+	args = append(args, fmt.Sprintf("dbname=%s", databaseName))
+	args = append(args, "sslmode=disable")
+
+	return container, strings.Join(args, " "), err
+}
+
+func RunMySqlContainer(port int, userLogin, userPassword, databaseName string) (*TestContainer, string, error) {
+	defaultPort := 3306
+	exposedPort := ""
+	if defaultPort == port {
+		exposedPort = fmt.Sprintf("%d/tcp", port)
+	} else {
+		exposedPort = fmt.Sprintf("%d:%d", port, defaultPort)
+	}
+	internalPort := fmt.Sprintf("%d/tcp", defaultPort)
+
+	container, err := RunTestContainer(
+		"mysql:latest",
+		[]string{exposedPort},
+		map[string]string{
+			"MYSQL_ROOT_PASSWORD": userPassword,
+			"MYSQL_DATABASE":      databaseName,
+			"MYSQL_USER":          userLogin,
+			"MYSQL_PASSWORD":      userPassword,
+		},
+		internalPort,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	cHost, cPort, err := container.MappedHostPort(internalPort)
+	if err != nil {
+		err = errors.Join(err, container.Close())
+		return nil, "", err
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", userLogin, userPassword, cHost, cPort, databaseName)
+
+	return container, dsn, nil
+}
+
+func RunTestContainer(image string, ports []string, env map[string]string, waitPorts ...string) (tc *TestContainer, err error) {
 	defer func() {
 		if err != nil && tc != nil && tc.logs != nil {
 			println(tc.logs.Sting())
@@ -82,7 +161,7 @@ func (tc *TestContainer) Close() error {
 	defer tc.m.Unlock()
 
 	if tc.container == nil {
-		return fmt.Errorf("container is closed")
+		return nil
 	}
 
 	err := tc.container.Terminate(context.Background())

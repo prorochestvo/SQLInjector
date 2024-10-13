@@ -1,21 +1,21 @@
 package schema
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/prorochestvo/sqlinjector/internal"
 	"io"
 	"sort"
 	"strings"
 	"time"
 )
 
-func State(m Instruction, c sqlConnection, tableName string) (exists Instruction, nonExists Instruction, undefined Instruction, err error) {
+func State(m Instruction, c internal.Dispatcher, tableName string) (exists Instruction, nonExists Instruction, undefined Instruction, err error) {
 	t, err := c.Begin()
 	if err != nil {
 		return
 	}
-	defer func(t transaction) {
+	defer func(t internal.Transaction) {
 		err = errors.Join(err, t.Rollback())
 	}(t)
 
@@ -60,12 +60,12 @@ func State(m Instruction, c sqlConnection, tableName string) (exists Instruction
 	return
 }
 
-func Plan(m Instruction, c sqlConnection, tableName string) (items Instruction, err error) {
+func Plan(m Instruction, c internal.Dispatcher, tableName string) (items Instruction, err error) {
 	t, err := c.Begin()
 	if err != nil {
 		return
 	}
-	defer func(t transaction) {
+	defer func(t internal.Transaction) {
 		err = errors.Join(err, t.Rollback())
 	}(t)
 
@@ -105,12 +105,12 @@ func Plan(m Instruction, c sqlConnection, tableName string) (items Instruction, 
 	return
 }
 
-func Up(m Instruction, c sqlConnection, tableName string) (err error) {
+func Up(m Instruction, c internal.Dispatcher, tableName string) (err error) {
 	t, err := c.Begin()
 	if err != nil {
 		return err
 	}
-	defer func(t transaction) {
+	defer func(t internal.Transaction) {
 		if err != nil {
 			err = errors.Join(err, t.Rollback())
 		} else {
@@ -168,12 +168,12 @@ func Up(m Instruction, c sqlConnection, tableName string) (err error) {
 	return
 }
 
-func Down(m Instruction, c sqlConnection, tableName string) (err error) {
+func Down(m Instruction, c internal.Dispatcher, tableName string) (err error) {
 	t, err := c.Begin()
 	if err != nil {
 		return err
 	}
-	defer func(t transaction) {
+	defer func(t internal.Transaction) {
 		if err != nil {
 			err = errors.Join(err, t.Rollback())
 		} else {
@@ -228,12 +228,12 @@ func Down(m Instruction, c sqlConnection, tableName string) (err error) {
 	return
 }
 
-func createMigrationTable(e executor, table string) error {
+func createMigrationTable(e internal.Executor, table string) error {
 	_, err := e.Exec("CREATE TABLE IF NOT EXISTS " + table + " (id VARCHAR(50) NOT NULL PRIMARY KEY, md5 VARCHAR(50) NOT NULL, applied_at VARCHAR(50) NOT NULL);")
 	return err
 }
 
-func insertMigrationTable(e executor, table string, id, md5 string) error {
+func insertMigrationTable(e internal.Executor, table string, id, md5 string) error {
 	sqlScript := fmt.Sprintf(
 		"INSERT"+" INTO "+table+" (id, md5, applied_at) VALUES ('%s', '%s', '%s');",
 		strings.ReplaceAll(id, "'", ""),
@@ -254,7 +254,7 @@ func insertMigrationTable(e executor, table string, id, md5 string) error {
 	return err
 }
 
-func deleteMigrationTable(e executor, table string, id, md5 string) error {
+func deleteMigrationTable(e internal.Executor, table string, id, md5 string) error {
 	sqlScript := fmt.Sprintf(
 		"DELETE"+" FROM "+table+" WHERE id = '%s' AND md5 = '%s';",
 		strings.ReplaceAll(id, "'", ""),
@@ -274,7 +274,7 @@ func deleteMigrationTable(e executor, table string, id, md5 string) error {
 	return err
 }
 
-func selectMigrationTable(e executor, table string) (m map[string]string, err error) {
+func selectMigrationTable(e internal.Extractor, table string) (m map[string]string, err error) {
 	rows, err := e.Query("SELECT id, md5" + " FROM " + table + " ORDER BY applied_at;")
 	if err != nil {
 		return
@@ -282,7 +282,7 @@ func selectMigrationTable(e executor, table string) (m map[string]string, err er
 
 	defer func(c io.Closer) { err = errors.Join(err, c.Close()) }(rows)
 
-	m = make(map[string]string, 0)
+	m = make(map[string]string)
 	for rows.Next() {
 		var id, md5 string
 		if err = rows.Scan(&id, &md5); err != nil {
@@ -292,18 +292,4 @@ func selectMigrationTable(e executor, table string) (m map[string]string, err er
 	}
 
 	return
-}
-
-type sqlConnection interface {
-	Begin() (*sql.Tx, error)
-}
-
-type executor interface {
-	Query(query string, args ...any) (*sql.Rows, error)
-	Exec(query string, args ...any) (sql.Result, error)
-}
-
-type transaction interface {
-	Commit() error
-	Rollback() error
 }

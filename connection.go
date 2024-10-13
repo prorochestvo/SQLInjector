@@ -8,12 +8,24 @@ import (
 	"time"
 )
 
-// NewConnection creates a new database session.
-func NewConnection(dialect internal.Dialect, source string, parameters ...Parameter) (*sql.DB, error) {
+func NewPostgreSQL(source string, parameters ...Parameter) (*sql.DB, error) {
+	return newConnection(internal.DialectPostgreSQL, source, parameters...)
+}
+
+func NewMySQL(source string, parameters ...Parameter) (*sql.DB, error) {
+	return newConnection(internal.DialectMySQL, source, parameters...)
+}
+
+func NewSQLite3(source string, parameters ...Parameter) (*sql.DB, error) {
+	return newConnection(internal.DialectSQLite3, source, parameters...)
+}
+
+// newConnection creates a new database session.
+func newConnection(dialect internal.Dialect, source string, parameters ...Parameter) (*sql.DB, error) {
 	db, err := sql.Open(string(dialect), source)
 	if err != nil || db == nil {
 		if err == nil {
-			err = errors.New("database handle is invalid")
+			err = fmt.Errorf("database %s handle is invalid", dialect)
 		}
 		return nil, err
 	}
