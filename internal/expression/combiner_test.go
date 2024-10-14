@@ -48,10 +48,3 @@ func TestOR(t *testing.T) {
 		t.Errorf("Expected %v, but got %v", expected, result)
 	}
 }
-func TestQueryMod(t *testing.T) {
-
-}
-
-func TestToString(t *testing.T) {
-
-}
