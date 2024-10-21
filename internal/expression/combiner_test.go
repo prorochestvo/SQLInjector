@@ -19,6 +19,8 @@ func TestNewCombinerOR(t *testing.T) {
 	require.Equal(t, 2, len(or1.items))
 
 	expectedItems1 := []*Where{w1, w2}
+	// TODO: REVIEW: reflect is very expensive, so could you create test cases without using it.
+	// TODO: REVIEW: all expressions has ToString() method, so you can use it to compare expected and actual results.
 	if !reflect.DeepEqual(or1.items, expectedItems1) {
 		t.Errorf("Expected %v, got %v", expectedItems1, or1.items)
 	}
@@ -44,6 +46,8 @@ func TestOR(t *testing.T) {
 
 	expected := []*Where{w1, w2, w3, w4}
 
+	// TODO: REVIEW: reflect is very expensive, so could you create test cases without using it.
+	// TODO: REVIEW: all expressions has ToString() method, so you can use it to compare expected and actual results.
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %v, but got %v", expected, result)
 	}

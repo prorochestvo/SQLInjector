@@ -18,6 +18,8 @@ func TestNewRelationFrom(t *testing.T) {
 
 	result := NewRelation(table, tables...)
 
+	// TODO: REVIEW: all expressions has ToString() method, so you can use it to compare expected and actual results.
+	// TODO: REVIEW: or you can use require.Equal() method to compare expected and actual results. (require.Equal(t, expected.tables, result.tables))
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %v, got %v", expected, result)
 	}
@@ -31,6 +33,7 @@ func TestRelation(t *testing.T) {
 
 	result := relation.Relation()
 
+	// TODO: REVIEW: all expressions has ToString() method, so you can use it to compare expected and actual results.
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %v, got %v", expected, result)
 	}
@@ -47,6 +50,9 @@ func TestQueryMod(t *testing.T) {
 
 	result := relation.QueryMod()
 
+	// TODO: REVIEW: you can use sqlite in-memory database for testing.
+	// TODO: however we can make this task later, because it is tough to implement at this moment
+	//db, err := receptacle.NewSQLite3()
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %v, got %v", expected, result)
 	}
@@ -61,6 +67,7 @@ func TestToString(t *testing.T) {
 
 	result := relation.ToString()
 
+	// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
 	if result != expected {
 		t.Errorf("Expected %v, got %v", expected, result)
 	}

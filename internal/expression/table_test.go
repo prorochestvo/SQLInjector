@@ -21,6 +21,7 @@ func TestExtractTableNameAndColumn(t *testing.T) {
 	for _, tt := range tests {
 		table, column := extractTableNameAndColumn(tt.column)
 		if table != tt.expectedTable || column != tt.expectedColumn {
+			// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
 			t.Errorf("extractTableNameAndColumn(%v) = %v, %v; expected %v, %v", tt.column, table, column, tt.expectedTable, tt.expectedColumn)
 		}
 	}
@@ -44,6 +45,7 @@ func TestJoinTableNameAndColumn(t *testing.T) {
 	expectedColumn = "\"name\""
 
 	if column != expectedColumn {
+		// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
 		t.Errorf("joinTableNameAndColumn(\"\", \"name\") = %v; expected %v", column, expectedColumn)
 	}
 }
@@ -64,6 +66,7 @@ func TestToPluralize(t *testing.T) {
 	for _, tt := range tests {
 		plural := toPluralize(tt.word)
 		if plural != tt.expected {
+			// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
 			t.Errorf("toPluralize(%v) = %v; expected %v", tt.word, plural, tt.expected)
 		}
 	}
@@ -83,6 +86,7 @@ func TestToSnakeCase(t *testing.T) {
 	for _, tt := range tests {
 		snake := toSnakeCase(tt.input)
 		if snake != tt.expected {
+			// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
 			t.Errorf("toSnakeCase(%v) = %v; expected %v", tt.input, snake, tt.expected)
 		}
 	}
