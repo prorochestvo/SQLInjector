@@ -7,6 +7,7 @@ import (
 var _ expression = &GroupBy{}
 
 func TestNewGroupBy(t *testing.T) {
+	t.Skip("not implemented")
 }
 
 func TestNewGroupWithTable(t *testing.T) {
