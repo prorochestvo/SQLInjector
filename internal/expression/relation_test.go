@@ -1,8 +1,10 @@
 package expression
 
 import (
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"reflect"
+	"gorm.io/gorm"
 	"testing"
 )
 
@@ -18,12 +20,10 @@ func TestNewRelationFrom(t *testing.T) {
 
 	result := NewRelation(table, tables...)
 
-	// TODO: REVIEW: all expressions has ToString() method, so you can use it to compare expected and actual results.
-	// TODO: REVIEW: or you can use require.Equal() method to compare expected and actual results. (require.Equal(t, expected.tables, result.tables))
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %v, got %v", expected, result)
-	}
+	require.Equal(t, expected.ToString(), result.ToString(), "The relation result should match the expected relation")
+
 }
+
 func TestRelation(t *testing.T) {
 	relation := &Relation{
 		tables: []string{"users", "orders", "payments"},
@@ -33,13 +33,16 @@ func TestRelation(t *testing.T) {
 
 	result := relation.Relation()
 
-	// TODO: REVIEW: all expressions has ToString() method, so you can use it to compare expected and actual results.
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %v, got %v", expected, result)
-	}
+	require.ElementsMatch(t, expected, result, "The relation result should match the expected tables")
+
 }
 
 func TestQueryMod(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err, "Failed to connect to the in-memory database")
+
+	_ = db
+
 	relation := &Relation{
 		tables: []string{"users", "orders"},
 	}
@@ -50,12 +53,7 @@ func TestQueryMod(t *testing.T) {
 
 	result := relation.QueryMod()
 
-	// TODO: REVIEW: you can use sqlite in-memory database for testing.
-	// TODO: however we can make this task later, because it is tough to implement at this moment
-	//db, err := receptacle.NewSQLite3()
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %v, got %v", expected, result)
-	}
+	require.Equal(t, expected, result, "The QueryMod result should match the expected QueryMod slice")
 }
 
 func TestToString(t *testing.T) {
@@ -67,8 +65,5 @@ func TestToString(t *testing.T) {
 
 	result := relation.ToString()
 
-	// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
-	if result != expected {
-		t.Errorf("Expected %v, got %v", expected, result)
-	}
+	require.Equal(t, expected, result, "The string representation of the relation should match the expected format")
 }

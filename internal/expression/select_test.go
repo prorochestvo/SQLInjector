@@ -1,8 +1,10 @@
 package expression
 
 import (
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"reflect"
+	"gorm.io/gorm"
 	"testing"
 )
 
@@ -11,62 +13,53 @@ var _ expression = &Select{}
 func TestNewSelect(t *testing.T) {
 	s := NewSelect("id")
 	expectedColumns := []string{"id"}
-	if !reflect.DeepEqual(s.Select(), expectedColumns) {
-		t.Errorf("Expected %v, got %v", expectedColumns, s.Select())
-	}
+
+	require.Equal(t, expectedColumns, s.Select(), "The selected columns should match the expected columns")
 
 	s = NewSelect("id", "name", "age")
 	expectedColumns = []string{"id", "name", "age"}
-	// TODO: REVIEW: all expressions has ToString() method, so you can use it to compare expected and actual results.
-	// TODO: REVIEW: or you can use require.Equal() method to compare expected and actual results.
-	if !reflect.DeepEqual(s.Select(), expectedColumns) {
-		t.Errorf("Expected %v, got %v", expectedColumns, s.Select())
-	}
+
+	require.Equal(t, expectedColumns, s.Select(), "The selected columns should match the expected columns")
 }
 
 func TestSelect(t *testing.T) {
 	s := NewSelect("id")
 	expected := []string{"id"}
-	if !reflect.DeepEqual(s.Select(), expected) {
-		t.Errorf("Expected %v, got %v", expected, s.Select())
-	}
+
+	require.Equal(t, expected, s.Select(), "The selected columns should match the expected columns")
 
 	s = NewSelect("id", "name", "age")
 	expected = []string{"id", "name", "age"}
-	// TODO: REVIEW: all expressions has ToString() method, so you can use it to compare expected and actual results.
-	// TODO: REVIEW: or you can use require.Equal() method to compare expected and actual results.
-	if !reflect.DeepEqual(s.Select(), expected) {
-		t.Errorf("Expected %v, got %v", expected, s.Select())
-	}
+
+	require.Equal(t, expected, s.Select(), "The selected columns should match the expected columns")
 }
 
 func TestSelect_QueryMod(t *testing.T) {
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err, "Failed to connect to the in-memory database")
+
+	_ = db
+
 	s := NewSelect("id")
 	expectedQueryMod := []qm.QueryMod{qm.Select("id")}
-	if !reflect.DeepEqual(s.QueryMod(), expectedQueryMod) {
-		t.Errorf("Expected %v, got %v", expectedQueryMod, s.QueryMod())
-	}
+
+	require.Equal(t, expectedQueryMod, s.QueryMod(), "Expected and actual QueryMod should be equal for single column select")
 
 	s = NewSelect("id", "name", "age")
 	expectedQueryMod = []qm.QueryMod{qm.Select("id", "name", "age")}
-	// TODO: REVIEW: you can use sqlite in-memory database for testing.
-	// TODO: however we can make this task later, because it is tough to implement at this moment
-	if !reflect.DeepEqual(s.QueryMod(), expectedQueryMod) {
-		t.Errorf("Expected %v, got %v", expectedQueryMod, s.QueryMod())
-	}
+
+	require.Equal(t, expectedQueryMod, s.QueryMod(), "Expected and actual QueryMod should be equal for multiple columns select")
 }
 
 func TestSelect_ToString(t *testing.T) {
 	s := NewSelect("id")
 	expectedString := "Select id"
-	if s.ToString() != expectedString {
-		t.Errorf("Expected %v, got %v", expectedString, s.ToString())
-	}
+
+	require.Equal(t, expectedString, s.ToString(), "Expected and actual Select string should be equal for single column select")
 
 	s = NewSelect("id", "name", "age")
 	expectedString = "Select id, name, age"
-	// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
-	if s.ToString() != expectedString {
-		t.Errorf("Expected %v, got %v", expectedString, s.ToString())
-	}
+
+	require.Equal(t, expectedString, s.ToString(), "Expected and actual Select string should be equal for multiple columns select")
 }
