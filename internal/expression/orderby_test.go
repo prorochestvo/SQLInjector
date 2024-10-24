@@ -1,13 +1,131 @@
 package expression
 
-import "testing"
+import (
+	"github.com/stretchr/testify/require"
+	"testing"
+)
 
 var _ expression = &OrderBy{}
 
-func TestNewOrderByFrom(t *testing.T) {
-	t.Skip("not implemented")
-}
+//func TestNewOrderByFrom(t *testing.T) {
+//	tests := []struct {
+//		expr     string
+//		expected []*OrderBy
+//	}{
+//		{"", []*OrderBy{}},
+//		{"id", []*OrderBy{{Column: "id", direction: defaulting}}},
+//		{"name ASC", []*OrderBy{{Column: "name", direction: Ascending}}},
+//		{"age DESC", []*OrderBy{{Column: "age", direction: Descending}}},
+//	}
+//
+//	for _, tt := range tests {
+//		result, err := NewOrderByFrom(tt.expr)
+//
+//		require.NoError(t, err)
+//
+//		require.ElementsMatch(t, tt.expected, result)
+//	}
+//}
 
 func TestNewOrderBy(t *testing.T) {
-	t.Skip("not implemented")
+	tests := []struct {
+		column    string
+		direction Direction
+		expected  *OrderBy
+	}{
+		{"users/name", Ascending, &OrderBy{Table: "users", Column: "name", direction: Ascending}},
+		{"age", Descending, &OrderBy{Table: "", Column: "age", direction: Descending}},
+		{"orders/price", Ascending, &OrderBy{Table: "orders", Column: "price", direction: Ascending}},
+		{"product_id", Ascending, &OrderBy{Table: "", Column: "product_id", direction: Ascending}},
+	}
+
+	for _, tt := range tests {
+		result := NewOrderBy(tt.column, tt.direction)
+
+		require.Equal(t, tt.expected, result)
+	}
+}
+
+func TestNewOrderByWithTable(t *testing.T) {
+	tests := []struct {
+		table     string
+		column    string
+		direction Direction
+		expected  *OrderBy
+	}{
+		{"users", "name", Ascending, &OrderBy{Table: "users", Column: "name", direction: Ascending}},
+		{"orders", "price", Descending, &OrderBy{Table: "orders", Column: "price", direction: Descending}},
+		{"products", "id", Ascending, &OrderBy{Table: "products", Column: "id", direction: Ascending}},
+		{"", "created_at", Ascending, &OrderBy{Table: "", Column: "created_at", direction: Ascending}},
+	}
+
+	for _, tt := range tests {
+		result := NewOrderByWithTable(tt.table, tt.column, tt.direction)
+
+		require.Equal(t, tt.expected, result)
+	}
+}
+
+//func TestOrderBy_OrderBy(t *testing.T) {
+//	tests := []struct {
+//		orderBy  *OrderBy
+//		expected string
+//	}{
+//		{&OrderBy{Table: "users", Column: "name", direction: Ascending}, "ASC"},
+//		{&OrderBy{Table: "orders", Column: "price", direction: Descending}, "DESC"},
+//		{&OrderBy{Table: "products", Column: "id", direction: defaulting}, "defaulting"},
+//	}
+//
+//	for _, tt := range tests {
+//		result := tt.orderBy.OrderBy()
+//		require.Equal(t, tt.expected, result)
+//	}
+//}
+
+//func TestOrderBy_QueryMod(t *testing.T) {
+//	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+//	require.NoError(t, err, "Failed to connect to the in-memory database")
+//
+//	tests := []struct {
+//		orderBy  *OrderBy
+//		expected string
+//	}{
+//		{&OrderBy{Table: "users", Column: "name", direction: Ascending}, `"users"."name" ASC`},
+//		{&OrderBy{Table: "orders", Column: "price", direction: Descending}, `"orders"."price" DESC`},
+//		{&OrderBy{Table: "products", Column: "id", direction: defaulting}, `"products"."id"`},
+//	}
+//
+//	for _, tt := range tests {
+//		mods := tt.orderBy.QueryMod()
+//
+//		if len(mods) != 1 {
+//			t.Errorf("Expected 1 mod, got %d", len(mods))
+//		}
+//
+//		query := mods[0].Mod.Query
+//		require.Equal(t, tt.expected, query)
+//	}
+//
+//	dbConn, _ := db.DB()
+//	dbConn.Close()
+//}
+
+func TestOrderBy_ToString(t *testing.T) {
+	tests := []struct {
+		orderBy  *OrderBy
+		expected string
+	}{
+		{&OrderBy{Table: "User", Column: "name", direction: Ascending}, "users.name ASC"},
+		{&OrderBy{Table: "Order", Column: "price", direction: Descending}, "orders.price DESC"},
+
+		{&OrderBy{Table: "Product", Column: "id", direction: defaulting}, "products.id"},
+
+		{&OrderBy{Table: "", Column: "name", direction: Ascending}, "name ASC"},
+		{&OrderBy{Table: "", Column: "id", direction: defaulting}, "id"},
+	}
+
+	for _, tt := range tests {
+		result := tt.orderBy.ToString()
+		require.Equal(t, tt.expected, result, "Expected %v, got %v", tt.expected, result)
+	}
 }
