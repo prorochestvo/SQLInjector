@@ -1,8 +1,8 @@
 package expression
 
 import (
+	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"reflect"
 	"testing"
 )
 
@@ -20,10 +20,9 @@ func TestExtractTableNameAndColumn(t *testing.T) {
 
 	for _, tt := range tests {
 		table, column := extractTableNameAndColumn(tt.column)
-		if table != tt.expectedTable || column != tt.expectedColumn {
-			// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
-			t.Errorf("extractTableNameAndColumn(%v) = %v, %v; expected %v, %v", tt.column, table, column, tt.expectedTable, tt.expectedColumn)
-		}
+
+		require.Equal(t, tt.expectedTable, table, "Expected and actual table names should be equal for column: %v", tt.column)
+		require.Equal(t, tt.expectedColumn, column, "Expected and actual column names should be equal for column: %v", tt.column)
 	}
 }
 
@@ -34,20 +33,14 @@ func TestJoinTableNameAndColumn(t *testing.T) {
 	expectedColumn := "\"users\".\"name\""
 	expectedJoin := qm.InnerJoin("\"users\" ON \"users\".\"id\" = \"user_id\"")
 
-	if column != expectedColumn {
-		t.Errorf("joinTableNameAndColumn(\"User\", \"name\") = %v; expected %v", column, expectedColumn)
-	}
-	if len(mods) != 1 || !reflect.DeepEqual(mods[0], expectedJoin) {
-		t.Errorf("Expected join mod %v, got %v", expectedJoin, mods)
-	}
+	require.Equal(t, expectedColumn, column, "joinTableNameAndColumn(\"User\", \"name\") должен вернуть ожидаемое значение")
+	require.Len(t, mods, 1, "Массив mods должен содержать один элемент")
+	require.Equal(t, expectedJoin, mods[0], "Ожидается правильный join мод")
 
 	column = joinTableNameAndColumn("", "name", nil)
 	expectedColumn = "\"name\""
 
-	if column != expectedColumn {
-		// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
-		t.Errorf("joinTableNameAndColumn(\"\", \"name\") = %v; expected %v", column, expectedColumn)
-	}
+	require.Equal(t, expectedColumn, column, "joinTableNameAndColumn(\"\", \"name\") должен вернуть ожидаемое значение")
 }
 
 func TestToPluralize(t *testing.T) {
@@ -65,10 +58,8 @@ func TestToPluralize(t *testing.T) {
 
 	for _, tt := range tests {
 		plural := toPluralize(tt.word)
-		if plural != tt.expected {
-			// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
-			t.Errorf("toPluralize(%v) = %v; expected %v", tt.word, plural, tt.expected)
-		}
+
+		require.Equal(t, tt.expected, plural, "toPluralize(%v) должен вернуть %v", tt.word, tt.expected)
 	}
 }
 
@@ -85,10 +76,7 @@ func TestToSnakeCase(t *testing.T) {
 
 	for _, tt := range tests {
 		snake := toSnakeCase(tt.input)
-		if snake != tt.expected {
-			// TODO: REVIEW: could you use require.Equal() method to compare expected and actual results.
-			t.Errorf("toSnakeCase(%v) = %v; expected %v", tt.input, snake, tt.expected)
-		}
+		require.Equal(t, tt.expected, snake, "toSnakeCase(%v) должен вернуть %v", tt.input, tt.expected)
 	}
 }
 
