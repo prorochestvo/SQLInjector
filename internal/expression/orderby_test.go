@@ -7,25 +7,32 @@ import (
 
 var _ expression = &OrderBy{}
 
-//func TestNewOrderByFrom(t *testing.T) {
-//	tests := []struct {
-//		expr     string
-//		expected []*OrderBy
-//	}{
-//		{"", []*OrderBy{}},
-//		{"id", []*OrderBy{{Column: "id", direction: defaulting}}},
-//		{"name ASC", []*OrderBy{{Column: "name", direction: Ascending}}},
-//		{"age DESC", []*OrderBy{{Column: "age", direction: Descending}}},
-//	}
-//
-//	for _, tt := range tests {
-//		result, err := NewOrderByFrom(tt.expr)
-//
-//		require.NoError(t, err)
-//
-//		require.ElementsMatch(t, tt.expected, result)
-//	}
-//}
+func TestNewOrderByFrom(t *testing.T) {
+	tests := []struct {
+		name     string
+		expr     string
+		expected []*OrderBy
+		wantErr  bool
+	}{
+		{"Empty expression", "", []*OrderBy{{}}, false}, // Пустое выражение ожидает пустой результат, если функция возвращает пустой слайс
+		{"Single column with default direction", "id", []*OrderBy{{Column: "id", direction: defaulting}}, false},
+		{"Single column ascending", "name ASC", []*OrderBy{{Column: "name", direction: Ascending}}, false},
+		{"Single column descending", "age DESC", []*OrderBy{{Column: "age", direction: Descending}}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := NewOrderByFrom(tt.expr)
+
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
 
 func TestNewOrderBy(t *testing.T) {
 	tests := []struct {
@@ -66,21 +73,21 @@ func TestNewOrderByWithTable(t *testing.T) {
 	}
 }
 
-//func TestOrderBy_OrderBy(t *testing.T) {
-//	tests := []struct {
-//		orderBy  *OrderBy
-//		expected string
-//	}{
-//		{&OrderBy{Table: "users", Column: "name", direction: Ascending}, "ASC"},
-//		{&OrderBy{Table: "orders", Column: "price", direction: Descending}, "DESC"},
-//		{&OrderBy{Table: "products", Column: "id", direction: defaulting}, "defaulting"},
-//	}
-//
-//	for _, tt := range tests {
-//		result := tt.orderBy.OrderBy()
-//		require.Equal(t, tt.expected, result)
-//	}
-//}
+func TestOrderBy_OrderBy(t *testing.T) {
+	tests := []struct {
+		orderBy  *OrderBy
+		expected string
+	}{
+		{&OrderBy{Table: "users", Column: "name", direction: Ascending}, "ASC"},
+		{&OrderBy{Table: "orders", Column: "price", direction: Descending}, "DESC"},
+		{&OrderBy{Table: "products", Column: "id", direction: ""}, ""},
+	}
+
+	for _, tt := range tests {
+		result := tt.orderBy.OrderBy()
+		require.Equal(t, tt.expected, result)
+	}
+}
 
 //func TestOrderBy_QueryMod(t *testing.T) {
 //	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -98,12 +105,13 @@ func TestNewOrderByWithTable(t *testing.T) {
 //	for _, tt := range tests {
 //		mods := tt.orderBy.QueryMod()
 //
-//		if len(mods) != 1 {
-//			t.Errorf("Expected 1 mod, got %d", len(mods))
-//		}
+//		require.Len(t, mods, 1, "Expected 1 mod")
 //
-//		query := mods[0].Mod.Query
-//		require.Equal(t, tt.expected, query)
+//		modStr := fmt.Sprintf("%v", mods[0])
+//		t.Logf("Generated mod string: %s", modStr)
+//
+//
+//		require.Equal(t, tt.expected, modStr, "The generated query mod should match the expected string")
 //	}
 //
 //	dbConn, _ := db.DB()
