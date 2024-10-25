@@ -14,7 +14,7 @@ func TestNewOrderByFrom(t *testing.T) {
 		expected []*OrderBy
 		wantErr  bool
 	}{
-		{"Empty expression", "", []*OrderBy{{}}, false}, // Пустое выражение ожидает пустой результат, если функция возвращает пустой слайс
+		{"Empty expression", "", []*OrderBy{{}}, false},
 		{"Single column with default direction", "id", []*OrderBy{{Column: "id", direction: defaulting}}, false},
 		{"Single column ascending", "name ASC", []*OrderBy{{Column: "name", direction: Ascending}}, false},
 		{"Single column descending", "age DESC", []*OrderBy{{Column: "age", direction: Descending}}, false},
