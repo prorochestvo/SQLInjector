@@ -1,6 +1,7 @@
 package expression
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"testing"
@@ -9,8 +10,8 @@ import (
 var _ expression = &GroupBy{}
 
 func TestNewGroupBy(t *testing.T) {
-	tests := []struct {
-		input          string
+	testCases := []struct {
+		inputColumn    string
 		expectedTable  string
 		expectedColumn string
 	}{
@@ -20,18 +21,19 @@ func TestNewGroupBy(t *testing.T) {
 		{"", "", ""},
 	}
 
-	for _, tt := range tests {
-		groupBy := NewGroupBy(tt.input)
-
-		require.Equal(t, tt.expectedTable, groupBy.Table, "Expected table to be %v, got %v", tt.expectedTable, groupBy.Table)
-		require.Equal(t, tt.expectedColumn, groupBy.Column, "Expected column to be %v, got %v", tt.expectedColumn, groupBy.Column)
+	for _, testCase := range testCases {
+		t.Run(testCase.inputColumn, func(t *testing.T) {
+			gb := NewGroupBy(testCase.inputColumn)
+			require.Equal(t, testCase.expectedTable, gb.Table)
+			require.Equal(t, testCase.expectedColumn, gb.Column)
+		})
 	}
 }
 
 func TestNewGroupWithTable(t *testing.T) {
-	tests := []struct {
-		table          string
-		column         string
+	testCases := []struct {
+		inputTable     string
+		inputColumn    string
 		expectedTable  string
 		expectedColumn string
 	}{
@@ -41,66 +43,70 @@ func TestNewGroupWithTable(t *testing.T) {
 		{"products", "", "products", ""},
 	}
 
-	for _, tt := range tests {
-		groupBy := NewGroupWithTable(tt.table, tt.column)
-
-		require.Equal(t, tt.expectedTable, groupBy.Table, "Expected table to be %v, got %v", tt.expectedTable, groupBy.Table)
-		require.Equal(t, tt.expectedColumn, groupBy.Column, "Expected column to be %v, got %v", tt.expectedColumn, groupBy.Column)
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("%s/%s", testCase.inputTable, testCase.inputColumn), func(t *testing.T) {
+			gb := NewGroupWithTable(testCase.inputTable, testCase.inputColumn)
+			require.Equal(t, testCase.expectedTable, gb.Table)
+			require.Equal(t, testCase.expectedColumn, gb.Column)
+		})
 	}
 }
 func TestGroupBy_GroupBy(t *testing.T) {
-	tests := []struct {
-		column         string
-		expectedOutput string
+	testCases := []struct {
+		inputColumn   string
+		expectedValue string
 	}{
-		{"name", "name"},
+		{"user/name", "name"},
 		{"age", "age"},
 		{"salary", "salary"},
 		{"", ""},
 	}
 
-	for _, tt := range tests {
-		groupBy := NewGroupWithTable("users", tt.column)
-
-		output := groupBy.GroupBy()
-		require.Equal(t, tt.expectedOutput, output, "Expected output to be %v, got %v", tt.expectedOutput, output)
+	for _, testCase := range testCases {
+		t.Run(testCase.inputColumn, func(t *testing.T) {
+			gb := NewGroupBy(testCase.inputColumn)
+			actually := gb.GroupBy()
+			require.Equal(t, testCase.expectedValue, actually)
+		})
 	}
 }
 
 func TestGROUPBY_QueryMod(t *testing.T) {
-	tests := []struct {
-		column         string
-		expectedOutput []qm.QueryMod
+	testCases := []struct {
+		inputColumn   string
+		expectedValue []qm.QueryMod
 	}{
-		{"name", []qm.QueryMod{qm.GroupBy("name")}},
+		{"user/name", []qm.QueryMod{qm.GroupBy("name")}},
 		{"age", []qm.QueryMod{qm.GroupBy("age")}},
 		{"salary", []qm.QueryMod{qm.GroupBy("salary")}},
 		{"", []qm.QueryMod{qm.GroupBy("")}},
 	}
 
-	for _, tt := range tests {
-		groupBy := NewGroupWithTable("users", tt.column)
-
-		output := groupBy.QueryMod()
-		require.Equal(t, tt.expectedOutput, output, "Expected output to be %v, got %v", tt.expectedOutput, output)
+	for _, testCase := range testCases {
+		t.Run(testCase.inputColumn, func(t *testing.T) {
+			gb := NewGroupBy(testCase.inputColumn)
+			actually := gb.QueryMod()
+			require.Equal(t, testCase.expectedValue, actually)
+		})
 	}
 }
 
 func TestGROUPBY_ToString(t *testing.T) {
-	tests := []struct {
-		column         string
-		expectedOutput string
+	testCases := []struct {
+		inputColumn   string
+		expectedValue string
 	}{
-		{"name", "name"},
+		{"user/name", "name"},
 		{"age", "age"},
 		{"salary", "salary"},
 		{"", ""},
 	}
 
-	for _, tt := range tests {
-		groupBy := NewGroupWithTable("users", tt.column)
-
-		output := groupBy.ToString()
-		require.Equal(t, tt.expectedOutput, output, "Expected output to be %v, got %v", tt.expectedOutput, output)
+	for _, testCase := range testCases {
+		t.Run(testCase.inputColumn, func(t *testing.T) {
+			gb := NewGroupBy(testCase.inputColumn)
+			actually := gb.ToString()
+			require.Equal(t, testCase.expectedValue, actually)
+		})
 	}
 }
