@@ -2,21 +2,21 @@ package sqlinjector
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"github.com/prorochestvo/sqlinjector/internal"
 	"github.com/prorochestvo/sqlinjector/internal/transaction"
 )
 
 // Transmute executes and transmutes result to expected type.
 // If annul is true, then rollback the given actions in the one transaction.
 // If annul is false, then commit the given actions in the one transaction.
-func Transmute[T any](db *sql.DB, annul bool, actions ...transaction.Action) (res T, err error) {
+func Transmute[T any](dispatcher internal.Dispatcher, annul bool, actions ...transaction.Action) (res T, err error) {
 	var tmp interface{}
 
 	if annul {
-		tmp, err = Rollback(db, actions...)
+		tmp, err = Rollback(dispatcher, actions...)
 	} else {
-		tmp, err = Commit(db, actions...)
+		tmp, err = Commit(dispatcher, actions...)
 	}
 
 	if err != nil {
@@ -33,11 +33,11 @@ func Transmute[T any](db *sql.DB, annul bool, actions ...transaction.Action) (re
 }
 
 // Rollback executes and rollbacks the given actions in the one transaction.
-func Rollback(db *sql.DB, actions ...transaction.Action) (interface{}, error) {
-	return transaction.Rollback(context.Background(), db, actions)
+func Rollback(d internal.Dispatcher, actions ...transaction.Action) (interface{}, error) {
+	return transaction.Rollback(context.Background(), d, actions)
 }
 
 // Commit executes and commits the given actions in the one transaction.
-func Commit(db *sql.DB, actions ...transaction.Action) (interface{}, error) {
-	return transaction.Commit(context.Background(), db, actions)
+func Commit(d internal.Dispatcher, actions ...transaction.Action) (interface{}, error) {
+	return transaction.Commit(context.Background(), d, actions)
 }

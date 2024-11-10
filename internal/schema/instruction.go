@@ -264,7 +264,6 @@ func parseTableFields(o interface{}) (map[string]fieldType, error) {
 		case reflect.Bool:
 			tableFields[columnName] = fieldTypeBool
 		case reflect.Slice, reflect.Array:
-			println(fmt.Sprintf("<<< parseTableFields: %s | %s | %s", columnName, fValue.Type().Elem().Kind(), fType.Type.String()))
 			switch fSliceKind := fValue.Type().Elem().Kind(); fSliceKind {
 			case reflect.String:
 				tableFields[columnName] = fieldTypeStringList

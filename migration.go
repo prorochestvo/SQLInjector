@@ -1,7 +1,6 @@
 package sqlinjector
 
 import (
-	"database/sql"
 	"embed"
 	"fmt"
 	"github.com/prorochestvo/sqlinjector/internal"
@@ -34,7 +33,7 @@ func (m *Migrater) SetTableName(n string) {
 	m.tableName = n
 }
 
-func (m *Migrater) State(db *sql.DB) ([]string, error) {
+func (m *Migrater) State(d internal.Dispatcher) ([]string, error) {
 	if len(m.instructions) == 0 {
 		return nil, nil
 	}
@@ -45,7 +44,7 @@ func (m *Migrater) State(db *sql.DB) ([]string, error) {
 		State string
 	}
 
-	exists, nonExists, undefined, err := schema.State(m.instructions, db, m.tableName)
+	exists, nonExists, undefined, err := schema.State(m.instructions, d, m.tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -95,12 +94,12 @@ func (m *Migrater) State(db *sql.DB) ([]string, error) {
 	return items, nil
 }
 
-func (m *Migrater) Plan(db *sql.DB) ([]string, error) {
+func (m *Migrater) Plan(d internal.Dispatcher) ([]string, error) {
 	if len(m.instructions) == 0 {
 		return nil, nil
 	}
 
-	instructions, err := schema.Plan(m.instructions, db, m.tableName)
+	instructions, err := schema.Plan(m.instructions, d, m.tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +112,7 @@ func (m *Migrater) Plan(db *sql.DB) ([]string, error) {
 	return items, nil
 }
 
-func (m *Migrater) Up(db *sql.DB) error {
+func (m *Migrater) Up(db internal.Dispatcher) error {
 	if len(m.instructions) == 0 {
 		return nil
 	}
@@ -121,12 +120,12 @@ func (m *Migrater) Up(db *sql.DB) error {
 	return schema.Up(m.instructions, db, m.tableName)
 }
 
-func (m *Migrater) Down(db *sql.DB) error {
+func (m *Migrater) Down(d internal.Dispatcher) error {
 	if len(m.instructions) == 0 {
 		return nil
 	}
 
-	exists, _, _, err := schema.State(m.instructions, db, m.tableName)
+	exists, _, _, err := schema.State(m.instructions, d, m.tableName)
 	if err != nil {
 		return err
 	}
@@ -146,15 +145,15 @@ func (m *Migrater) Down(db *sql.DB) error {
 		return nil
 	}
 
-	return schema.Down(lastInstruction, db, m.tableName)
+	return schema.Down(lastInstruction, d, m.tableName)
 }
 
-func (m *Migrater) Clean(db *sql.DB) error {
+func (m *Migrater) Clean(d internal.Dispatcher) error {
 	if len(m.instructions) == 0 {
 		return nil
 	}
 
-	return schema.Down(m.instructions, db, m.tableName)
+	return schema.Down(m.instructions, d, m.tableName)
 }
 
 // NewFileMigration creates a new migration from a local folder

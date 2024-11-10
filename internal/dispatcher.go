@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"database/sql"
+	"io"
 )
 
 type Executor interface {
@@ -16,14 +17,10 @@ type Extractor interface {
 
 type Dispatcher interface {
 	Begin() (*sql.Tx, error)
-	Executor
-	Extractor
-}
-
-type DispatcherEx interface {
 	BeginTx(context.Context, *sql.TxOptions) (*sql.Tx, error)
 	Executor
 	Extractor
+	io.Closer
 }
 
 type Transaction interface {
