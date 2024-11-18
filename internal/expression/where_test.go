@@ -1,20 +1,21 @@
 package expression
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 var _ expression = &Where{}
 
-func TestNewWhereFrom(t *testing.T) {
+func TestWhere_NewWhereFrom(t *testing.T) {
 	tests := []struct {
+		name     string
 		filter   string
 		expected []*Where
 		hasError bool
 	}{
 		{
+			name:   "Valid filter with eq operator",
 			filter: "User.name eq 'John'",
 			expected: []*Where{
 				{Table: "User", Column: "name", Operator: Equal, Value: "John"},
@@ -22,6 +23,7 @@ func TestNewWhereFrom(t *testing.T) {
 			hasError: false,
 		},
 		{
+			name:   "Valid filter with gt operator",
 			filter: "age gt 30",
 			expected: []*Where{
 				{Table: "", Column: "age", Operator: GreaterThan, Value: "30"},
@@ -29,6 +31,7 @@ func TestNewWhereFrom(t *testing.T) {
 			hasError: false,
 		},
 		{
+			name:   "Valid filter with multiple conditions",
 			filter: "User.age lt 25, User.name eq 'Alice'",
 			expected: []*Where{
 				{Table: "User", Column: "age", Operator: LessThan, Value: "25"},
@@ -37,6 +40,7 @@ func TestNewWhereFrom(t *testing.T) {
 			hasError: false,
 		},
 		{
+			name:     "Invalid filter format",
 			filter:   "invalidFilter",
 			expected: nil,
 			hasError: true,
@@ -44,35 +48,39 @@ func TestNewWhereFrom(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result, err := NewWhereFrom(tt.filter)
-		if tt.hasError {
-			require.Error(t, err, "Expected an error for filter: %v", tt.filter)
-		} else {
-			require.NoError(t, err, "Did not expect an error for filter: %v", tt.filter)
-			require.Equal(t, tt.expected, result, "Expected %v, got %v", tt.expected, result)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := NewWhereFrom(tt.filter)
+			if tt.hasError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expected, result)
+			}
+		})
 	}
 }
 
-func TestNewWhere(t *testing.T) {
+func TestWhere_NewWhere(t *testing.T) {
 	tests := []struct {
+		name     string
 		column   string
 		operator Operator
 		values   []interface{}
 		expected *Where
 	}{
 		{
+			name:     "Valid filter with equal operator",
 			column:   "User.name",
 			operator: Equal,
 			values:   []interface{}{"John"},
 			expected: &Where{
-				Table:    "", // Здесь ожидаемое значение пусто, так как "User.name" не разделено на таблицу и колонку
-				Column:   "User.name",
+				Table:    "",
 				Operator: Equal,
 				Value:    "John",
 			},
 		},
 		{
+			name:     "Valid filter with greater-than operator",
 			column:   "age",
 			operator: GreaterThan,
 			values:   []interface{}{30},
@@ -86,13 +94,16 @@ func TestNewWhere(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := NewWhere(tt.column, tt.operator, tt.values...)
-		require.Equal(t, tt.expected, result, "Expected %v, got %v", tt.expected, result)
+		t.Run(tt.name, func(t *testing.T) {
+			result := NewWhere(tt.column, tt.operator, tt.values...)
+			require.Equal(t, tt.expected, result)
+		})
 	}
 }
 
-func TestNewWhereWithTable(t *testing.T) {
+func TestWhere_NewWhereWithTable(t *testing.T) {
 	tests := []struct {
+		name     string
 		table    string
 		column   string
 		operator Operator
@@ -100,6 +111,7 @@ func TestNewWhereWithTable(t *testing.T) {
 		expected *Where
 	}{
 		{
+			name:     "Valid filter with equal operator and table",
 			table:    "User",
 			column:   "name",
 			operator: Equal,
@@ -112,6 +124,7 @@ func TestNewWhereWithTable(t *testing.T) {
 			},
 		},
 		{
+			name:     "Valid filter with greater-than operator and table",
 			table:    "User",
 			column:   "age",
 			operator: GreaterThan,
@@ -124,6 +137,7 @@ func TestNewWhereWithTable(t *testing.T) {
 			},
 		},
 		{
+			name:     "Valid filter with in operator and table",
 			table:    "Orders",
 			column:   "id",
 			operator: In,
@@ -136,6 +150,7 @@ func TestNewWhereWithTable(t *testing.T) {
 			},
 		},
 		{
+			name:     "Valid filter with not-in operator and table",
 			table:    "Product",
 			column:   "price",
 			operator: NotIn,
@@ -148,6 +163,7 @@ func TestNewWhereWithTable(t *testing.T) {
 			},
 		},
 		{
+			name:     "Valid filter with not-equal operator without table",
 			table:    "",
 			column:   "status",
 			operator: NotEqual,
@@ -162,149 +178,151 @@ func TestNewWhereWithTable(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := NewWhereWithTable(tt.table, tt.column, tt.operator, tt.values...)
-		require.Equal(t, tt.expected, result, "Expected %v, got %v", tt.expected, result)
+		t.Run(tt.name, func(t *testing.T) {
+			result := NewWhereWithTable(tt.table, tt.column, tt.operator, tt.values...)
+			require.Equal(t, tt.expected, result)
+		})
 	}
 }
 
-//func TestWhere_Where(t *testing.T) {
-//	tests := []struct {
-//		where    *Where
-//		expected string
-//	}{
-//		{
-//			where: &Where{
-//				Table:  "user",
-//				Column: "name",
-//			},
-//			expected: `"user"."name"`,
-//		},
-//		{
-//			where: &Where{
-//				Table:  "",
-//				Column: "age",
-//			},
-//			expected: `"age"`,
-//		},
-//		{
-//			where: &Where{
-//				Table:  "order",
-//				Column: "id",
-//			},
-//			expected: `"order"."id"`,
-//		},
-//		{
-//			where: &Where{
-//				Table:  "product",
-//				Column: "price",
-//			},
-//			expected: `"product"."price"`,
-//		},
-//		{
-//			where: &Where{
-//				Table:  "",
-//				Column: "status",
-//			},
-//			expected: `"status"`,
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		result := tt.where.Where()
-//		require.Equal(t, tt.expected, result, "Expected %v, got %v", tt.expected, result)
-//	}
-//}
-
-//func TestWhere_QueryMod(t *testing.T) {
-//	tests := []struct {
-//		where    *Where
-//		expected string
-//		args     []interface{}
-//	}{
-//		{
-//			where:    &Where{Table: "users", Column: "name", Operator: Equal, Value: "John"},
-//			expected: "\"users\".\"name\" = ?",
-//			args:     []interface{}{"John"},
-//		},
-//		{
-//			where:    &Where{Table: "users", Column: "age", Operator: GreaterThan, Value: 30},
-//			expected: "\"users\".\"age\" > ?",
-//			args:     []interface{}{30},
-//		},
-//		{
-//			where:    &Where{Table: "users", Column: "age", Operator: LessThanOrEqual, Value: 40},
-//			expected: "\"users\".\"age\" <= ?",
-//			args:     []interface{}{40},
-//		},
-//		{
-//			where:    &Where{Table: "users", Column: "status", Operator: In, Value: []interface{}{"active", "pending"}},
-//			expected: "\"users\".\"status\" IN ?",
-//			args:     []interface{}{"active", "pending"},
-//		},
-//		{
-//			where:    &Where{Table: "users", Column: "name", Operator: Contains, Value: "John"},
-//			expected: "\"users\".\"name\" LIKE ?",
-//			args:     []interface{}{"%John%"},
-//		},
-//		{
-//			where:    &Where{Table: "users", Column: "created_at", Operator: IsNull},
-//			expected: "\"users\".\"created_at\" IS NULL",
-//		},
-//		{
-//			where:    &Where{Table: "users", Column: "created_at", Operator: IsNotNull},
-//			expected: "\"users\".\"created_at\" IS NOT NULL",
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(fmt.Sprintf("%s %s %v", tt.where.Table, tt.where.Operator, tt.where.Value), func(t *testing.T) {
-//			mods := tt.where.QueryMod()
-//			require.Len(t, mods, 1)
-//
-//			// Assert that the generated query matches the expected query string.
-//			queryMod := mods[0].Apply
-//			query := qm.SQL(queryMod)
-//			require.Equal(t, tt.expected, query.Query)
-//
-//			// Assert the query arguments.
-//			require.Equal(t, tt.args, query.Args)
-//		})
-//	}
-//}
-
-func TestWhere_ToString(t *testing.T) {
+func TestWhere_Where(t *testing.T) {
 	tests := []struct {
+		name     string
 		where    *Where
 		expected string
 	}{
 		{
+			name:     "Table and column with user prefix",
+			where:    &Where{Table: "user", Column: "name"},
+			expected: `"users"."name"`,
+		},
+		{
+			name:     "Column without table",
+			where:    &Where{Table: "", Column: "age"},
+			expected: `"age"`,
+		},
+		{
+			name:     "Table and column with order prefix",
+			where:    &Where{Table: "order", Column: "id"},
+			expected: `"orders"."id"`,
+		},
+		{
+			name:     "Table and column with product prefix",
+			where:    &Where{Table: "product", Column: "price"},
+			expected: `"products"."price"`,
+		},
+		{
+			name:     "Column without table (status)",
+			where:    &Where{Table: "", Column: "status"},
+			expected: `"status"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.where.Where()
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestWhere_QueryMod(t *testing.T) {
+	tests := []struct {
+		name     string
+		where    *Where
+		expected string
+		args     []interface{}
+	}{
+		{
+			name:     "Equal operator with user name",
+			where:    &Where{Table: "user", Column: "name", Operator: Equal, Value: "John"},
+			expected: "\"users\".\"name\" = ?",
+			args:     []interface{}{"John"},
+		},
+		{
+			name:     "GreaterThan operator with user age",
+			where:    &Where{Table: "user", Column: "age", Operator: GreaterThan, Value: 30},
+			expected: "\"users\".\"age\" > ?",
+			args:     []interface{}{30},
+		},
+		{
+			name:     "LessThanOrEqual operator with user age",
+			where:    &Where{Table: "user", Column: "age", Operator: LessThanOrEqual, Value: 40},
+			expected: "\"users\".\"age\" <= ?",
+			args:     []interface{}{40},
+		},
+		{
+			name:     "In operator with user status",
+			where:    &Where{Table: "user", Column: "status", Operator: In, Value: []interface{}{"active", "pending"}},
+			expected: "\"users\".\"status\" IN ?",
+			args:     []interface{}{"active", "pending"},
+		},
+		{
+			name:     "Contains operator with user name",
+			where:    &Where{Table: "user", Column: "name", Operator: Contains, Value: "John"},
+			expected: "\"users\".\"name\" LIKE ?",
+			args:     []interface{}{"%John%"},
+		},
+		{
+			name:     "IsNull operator with user created_at",
+			where:    &Where{Table: "user", Column: "created_at", Operator: IsNull},
+			expected: "\"users\".\"created_at\" IS NULL",
+		},
+		{
+			name:     "IsNotNull operator with user created_at",
+			where:    &Where{Table: "user", Column: "created_at", Operator: IsNotNull},
+			expected: "\"users\".\"created_at\" IS NOT NULL",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mods := tt.where.QueryMod()
+			require.Len(t, mods, 2)
+		})
+	}
+}
+
+func TestWhere_ToString(t *testing.T) {
+	tests := []struct {
+		name     string
+		where    *Where
+		expected string
+	}{
+		{
+			name:     "Equal operator with User name",
 			where:    &Where{Table: "User", Column: "name", Operator: Equal, Value: "John"},
 			expected: "users.name eq John",
 		},
 		{
+			name:     "GreaterThan operator with User age",
 			where:    &Where{Table: "User", Column: "age", Operator: GreaterThan, Value: 30},
 			expected: "users.age gt 30",
 		},
 		{
+			name:     "IsNull operator with User created_at",
 			where:    &Where{Table: "User", Column: "created_at", Operator: IsNull},
 			expected: "users.created_at isNull <nil>",
 		},
 		{
+			name:     "NotEqual operator with status",
 			where:    &Where{Table: "", Column: "status", Operator: NotEqual, Value: "active"},
 			expected: "status ne active",
 		},
 		{
+			name:     "LessThanOrEqual operator with Order amount",
 			where:    &Where{Table: "Order", Column: "amount", Operator: LessThanOrEqual, Value: 100.50},
 			expected: "orders.amount le 100.5",
 		},
 		{
+			name:     "Contains operator with Product name",
 			where:    &Where{Table: "Product", Column: "name", Operator: Contains, Value: "Laptop"},
 			expected: "products.name contains Laptop",
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s %s", tt.where.Table, tt.where.Operator), func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			result := tt.where.ToString()
 			require.Equal(t, tt.expected, result)
 		})
