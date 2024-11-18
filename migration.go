@@ -33,7 +33,7 @@ func (m *Migrater) SetTableName(n string) {
 	m.tableName = n
 }
 
-func (m *Migrater) State(d internal.Dispatcher) ([]string, error) {
+func (m *Migrater) State(vault internal.Vault) ([]string, error) {
 	if len(m.instructions) == 0 {
 		return nil, nil
 	}
@@ -44,7 +44,7 @@ func (m *Migrater) State(d internal.Dispatcher) ([]string, error) {
 		State string
 	}
 
-	exists, nonExists, undefined, err := schema.State(m.instructions, d, m.tableName)
+	exists, nonExists, undefined, err := schema.State(m.instructions, vault, m.tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -94,12 +94,12 @@ func (m *Migrater) State(d internal.Dispatcher) ([]string, error) {
 	return items, nil
 }
 
-func (m *Migrater) Plan(d internal.Dispatcher) ([]string, error) {
+func (m *Migrater) Plan(vault internal.Vault) ([]string, error) {
 	if len(m.instructions) == 0 {
 		return nil, nil
 	}
 
-	instructions, err := schema.Plan(m.instructions, d, m.tableName)
+	instructions, err := schema.Plan(m.instructions, vault, m.tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -112,20 +112,20 @@ func (m *Migrater) Plan(d internal.Dispatcher) ([]string, error) {
 	return items, nil
 }
 
-func (m *Migrater) Up(db internal.Dispatcher) error {
+func (m *Migrater) Up(vault internal.Vault) error {
 	if len(m.instructions) == 0 {
 		return nil
 	}
 
-	return schema.Up(m.instructions, db, m.tableName)
+	return schema.Up(m.instructions, vault, m.tableName)
 }
 
-func (m *Migrater) Down(d internal.Dispatcher) error {
+func (m *Migrater) Down(vault internal.Vault) error {
 	if len(m.instructions) == 0 {
 		return nil
 	}
 
-	exists, _, _, err := schema.State(m.instructions, d, m.tableName)
+	exists, _, _, err := schema.State(m.instructions, vault, m.tableName)
 	if err != nil {
 		return err
 	}
@@ -145,15 +145,15 @@ func (m *Migrater) Down(d internal.Dispatcher) error {
 		return nil
 	}
 
-	return schema.Down(lastInstruction, d, m.tableName)
+	return schema.Down(lastInstruction, vault, m.tableName)
 }
 
-func (m *Migrater) Clean(d internal.Dispatcher) error {
+func (m *Migrater) Clean(vault internal.Vault) error {
 	if len(m.instructions) == 0 {
 		return nil
 	}
 
-	return schema.Down(m.instructions, d, m.tableName)
+	return schema.Down(m.instructions, vault, m.tableName)
 }
 
 // NewFileMigration creates a new migration from a local folder

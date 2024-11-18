@@ -15,7 +15,7 @@ type Extractor interface {
 	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
-type Dispatcher interface {
+type Vault interface {
 	Begin() (*sql.Tx, error)
 	BeginTx(context.Context, *sql.TxOptions) (*sql.Tx, error)
 	Executor

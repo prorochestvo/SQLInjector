@@ -5,18 +5,50 @@ import (
 	"fmt"
 	"github.com/prorochestvo/sqlinjector/internal"
 	"github.com/prorochestvo/sqlinjector/internal/transaction"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-// Transmute executes and transmutes result to expected type.
-// If annul is true, then rollback the given actions in the one transaction.
-// If annul is false, then commit the given actions in the one transaction.
-func Transmute[T any](dispatcher internal.Dispatcher, annul bool, actions ...transaction.Action) (res T, err error) {
+// Rollback executes and rollbacks the given actions in the one transaction.
+func Rollback[T any](vault internal.Vault, actions ...Action[T]) (T, error) {
+	return transmute(vault, true, actions...)
+}
+
+// TransactionRollback executes and rollbacks the given actions in the one transaction.
+func TransactionRollback(vault internal.Vault, actions ...transaction.Action) (interface{}, error) {
+	return transaction.Rollback(context.Background(), vault, actions)
+}
+
+// Commit executes and commits the given actions in the one transaction.
+func Commit[T any](vault internal.Vault, actions ...Action[T]) (T, error) {
+	return transmute(vault, false, actions...)
+}
+
+// TransactionCommit executes and commits the given actions in the one transaction.
+func TransactionCommit(vault internal.Vault, actions ...transaction.Action) (interface{}, error) {
+	return transaction.Commit(context.Background(), vault, actions)
+}
+
+type Action[T any] func(boil.ContextExecutor) (T, error)
+
+// transmute executes and transmutes result to expected type.
+// If revoke is true, then rollback the given actions in the one transaction.
+// If revoke is false, then commit the given actions in the one transaction.
+func transmute[T any](vault internal.Vault, revoke bool, actions ...Action[T]) (res T, err error) {
 	var tmp interface{}
 
-	if annul {
-		tmp, err = Rollback(dispatcher, actions...)
+	a := make([]transaction.Action, len(actions))
+	for i, action := range actions {
+		a[i] = func(a Action[T]) transaction.Action {
+			return func(executor boil.ContextExecutor) (interface{}, error) {
+				return a(executor)
+			}
+		}(action)
+	}
+
+	if revoke {
+		tmp, err = TransactionRollback(vault, a...)
 	} else {
-		tmp, err = Commit(dispatcher, actions...)
+		tmp, err = TransactionCommit(vault, a...)
 	}
 
 	if err != nil {
@@ -30,14 +62,4 @@ func Transmute[T any](dispatcher internal.Dispatcher, annul bool, actions ...tra
 	}
 
 	return
-}
-
-// Rollback executes and rollbacks the given actions in the one transaction.
-func Rollback(d internal.Dispatcher, actions ...transaction.Action) (interface{}, error) {
-	return transaction.Rollback(context.Background(), d, actions)
-}
-
-// Commit executes and commits the given actions in the one transaction.
-func Commit(d internal.Dispatcher, actions ...transaction.Action) (interface{}, error) {
-	return transaction.Commit(context.Background(), d, actions)
 }

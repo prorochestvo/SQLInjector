@@ -75,6 +75,7 @@ func TestWhere_NewWhere(t *testing.T) {
 			values:   []interface{}{"John"},
 			expected: &Where{
 				Table:    "",
+				Column:   "User.name",
 				Operator: Equal,
 				Value:    "John",
 			},

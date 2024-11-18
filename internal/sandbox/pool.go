@@ -65,7 +65,7 @@ func (p *Pool) NewPostgreSQL(port int, options ...string) (internal.Vault, error
 
 	p.counter[n]++
 
-	v := internal.NewSQLVault(
+	v := NewStubVault(
 		container.Dialect(),
 		sqlBase,
 		p.counter[n],
@@ -118,7 +118,7 @@ func (p *Pool) NewMySQL(port int, options ...string) (internal.Vault, error) {
 
 	p.counter[n]++
 
-	v := internal.NewSQLVault(
+	v := NewStubVault(
 		container.Dialect(),
 		sqlBase,
 		p.counter[n],
@@ -154,7 +154,7 @@ func (p *Pool) NewSQLite3() (internal.Vault, error) {
 
 	p.counter[n]++
 
-	v := internal.NewSQLVault(
+	v := NewStubVault(
 		internal.DialectSQLite3,
 		sqlBase,
 		p.counter[n],
@@ -207,20 +207,6 @@ func (p *Pool) remove(n string) error {
 	}
 
 	return err
-}
-
-type releaser struct {
-	Pool interface {
-		remove(name string) error
-	}
-	Name string
-}
-
-func (r *releaser) Close() error {
-	if r.Pool == nil {
-		return nil
-	}
-	return r.Pool.remove(r.Name)
 }
 
 var ErrContainerNotFound = errors.New("container not found")

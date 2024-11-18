@@ -37,8 +37,8 @@ func TestCommit(t *testing.T) {
 		}
 	}
 
-	extractActualIDs := func(t *testing.T, d internal.Dispatcher) []string {
-		rows, err := d.Query("SELECT id FROM" + " " + table + " ORDER BY id;")
+	extractActualIDs := func(t *testing.T, vault internal.Vault) []string {
+		rows, err := vault.Query("SELECT id FROM" + " " + table + " ORDER BY id;")
 		require.NoError(t, err)
 		require.NotNil(t, rows)
 		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(rows)
@@ -264,8 +264,8 @@ func TestRollback(t *testing.T) {
 	}
 	insertNew := insert(hex.EncodeToString(uuid.NewV4().Bytes()))
 
-	extractActualIDs := func(t *testing.T, d internal.Dispatcher) []string {
-		rows, err := d.Query("SELECT id FROM" + " " + table + " ORDER BY id;")
+	extractActualIDs := func(t *testing.T, vault internal.Vault) []string {
+		rows, err := vault.Query("SELECT id FROM" + " " + table + " ORDER BY id;")
 		require.NoError(t, err)
 		require.NotNil(t, rows)
 		defer func(closer io.Closer) { require.NoError(t, closer.Close()) }(rows)

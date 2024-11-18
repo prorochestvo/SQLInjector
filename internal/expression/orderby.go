@@ -45,7 +45,7 @@ func NewOrderByFrom(expr string) ([]*OrderBy, error) {
 		o = append(o, &OrderBy{
 			Table:     t,
 			Column:    f,
-			direction: d,
+			Direction: d,
 		})
 	}
 	return o, nil
@@ -57,18 +57,17 @@ func NewOrderBy(column string, direction Direction) *OrderBy {
 }
 
 func NewOrderByWithTable(table, column string, direction Direction) *OrderBy {
-	return &OrderBy{Table: table, Column: column, direction: direction}
+	return &OrderBy{Table: table, Column: column, Direction: direction}
 }
 
 type OrderBy struct {
 	Table     string
 	Column    string
-	direction Direction
-	Direction string
+	Direction Direction
 }
 
 func (o *OrderBy) OrderBy() string {
-	return string(o.direction)
+	return string(o.Direction)
 }
 
 func (o *OrderBy) QueryMod() []qm.QueryMod {
@@ -77,8 +76,8 @@ func (o *OrderBy) QueryMod() []qm.QueryMod {
 	c := joinTableNameAndColumn(o.Table, o.Column, &mods)
 
 	var d string
-	if o.direction != defaulting {
-		d = " " + string(o.direction)
+	if o.Direction != defaulting {
+		d = " " + string(o.Direction)
 	}
 
 	return []qm.QueryMod{qm.OrderBy(c + d)}
@@ -92,8 +91,8 @@ func (o *OrderBy) ToString() string {
 	}
 
 	var d string
-	if o.direction != defaulting {
-		d = " " + string(o.direction)
+	if o.Direction != defaulting {
+		d = " " + string(o.Direction)
 	}
 
 	return c + d
