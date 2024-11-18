@@ -10,7 +10,7 @@ import (
 
 var _ expression = &Relation{}
 
-func TestNewRelationFrom(t *testing.T) {
+func TestRelation_NewRelation(t *testing.T) {
 	table := "users"
 	tables := []string{"orders", "payments"}
 
@@ -20,11 +20,11 @@ func TestNewRelationFrom(t *testing.T) {
 
 	result := NewRelation(table, tables...)
 
-	require.Equal(t, expected.ToString(), result.ToString(), "The relation result should match the expected relation")
+	require.Equal(t, expected.ToString(), result.ToString())
 
 }
 
-func TestRelation(t *testing.T) {
+func TestRelation_Relation(t *testing.T) {
 	relation := &Relation{
 		tables: []string{"users", "orders", "payments"},
 	}
@@ -33,13 +33,13 @@ func TestRelation(t *testing.T) {
 
 	result := relation.Relation()
 
-	require.ElementsMatch(t, expected, result, "The relation result should match the expected tables")
+	require.ElementsMatch(t, expected, result)
 
 }
 
-func TestQueryMod(t *testing.T) {
+func TestRelation_QueryMod(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err, "Failed to connect to the in-memory database")
+	require.NoError(t, err)
 
 	_ = db
 
@@ -53,10 +53,10 @@ func TestQueryMod(t *testing.T) {
 
 	result := relation.QueryMod()
 
-	require.Equal(t, expected, result, "The QueryMod result should match the expected QueryMod slice")
+	require.Equal(t, expected, result)
 }
 
-func TestToString(t *testing.T) {
+func TestRelation_ToStringToString(t *testing.T) {
 	relation := &Relation{
 		tables: []string{"users", "orders"},
 	}
@@ -65,5 +65,5 @@ func TestToString(t *testing.T) {
 
 	result := relation.ToString()
 
-	require.Equal(t, expected, result, "The string representation of the relation should match the expected format")
+	require.Equal(t, expected, result)
 }
