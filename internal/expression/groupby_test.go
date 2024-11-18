@@ -9,7 +9,7 @@ import (
 
 var _ expression = &GroupBy{}
 
-func TestNewGroupBy(t *testing.T) {
+func TestGroupBy_NewGroupBy(t *testing.T) {
 	testCases := []struct {
 		inputColumn    string
 		expectedTable  string
@@ -30,7 +30,7 @@ func TestNewGroupBy(t *testing.T) {
 	}
 }
 
-func TestNewGroupWithTable(t *testing.T) {
+func TestGroupBy_NewGroupWithTable(t *testing.T) {
 	testCases := []struct {
 		inputTable     string
 		inputColumn    string
@@ -71,7 +71,7 @@ func TestGroupBy_GroupBy(t *testing.T) {
 	}
 }
 
-func TestGROUPBY_QueryMod(t *testing.T) {
+func TestGroupBy_QueryMod(t *testing.T) {
 	testCases := []struct {
 		inputColumn   string
 		expectedValue []qm.QueryMod
@@ -91,7 +91,7 @@ func TestGROUPBY_QueryMod(t *testing.T) {
 	}
 }
 
-func TestGROUPBY_ToString(t *testing.T) {
+func TestGroupBy_ToString(t *testing.T) {
 	testCases := []struct {
 		inputColumn   string
 		expectedValue string
