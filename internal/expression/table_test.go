@@ -6,77 +6,85 @@ import (
 	"testing"
 )
 
-func TestExtractTableNameAndColumn(t *testing.T) {
+func TestTable_ExtractTableNameAndColumn(t *testing.T) {
 	tests := []struct {
+		name           string
 		column         string
 		expectedTable  string
 		expectedColumn string
 	}{
-		{"users/name", "users", "name"},
-		{"name", "", "name"},
-		{"orders/id", "orders", "id"},
-		{"", "", ""},
+		{"With table and column", "users/name", "users", "name"},
+		{"Without table", "name", "", "name"},
+		{"With another table and column", "orders/id", "orders", "id"},
+		{"Empty input", "", "", ""},
 	}
 
 	for _, tt := range tests {
-		table, column := extractTableNameAndColumn(tt.column)
+		t.Run(tt.name, func(t *testing.T) {
+			table, column := extractTableNameAndColumn(tt.column)
 
-		require.Equal(t, tt.expectedTable, table, "Expected and actual table names should be equal for column: %v", tt.column)
-		require.Equal(t, tt.expectedColumn, column, "Expected and actual column names should be equal for column: %v", tt.column)
+			require.Equal(t, tt.expectedTable, table)
+			require.Equal(t, tt.expectedColumn, column)
+		})
 	}
 }
 
-func TestJoinTableNameAndColumn(t *testing.T) {
+func TestTable_JoinTableNameAndColumn(t *testing.T) {
 	var mods []qm.QueryMod
 
 	column := joinTableNameAndColumn("User", "name", &mods)
 	expectedColumn := "\"users\".\"name\""
 	expectedJoin := qm.InnerJoin("\"users\" ON \"users\".\"id\" = \"user_id\"")
 
-	require.Equal(t, expectedColumn, column, "joinTableNameAndColumn(\"User\", \"name\") должен вернуть ожидаемое значение")
-	require.Len(t, mods, 1, "Массив mods должен содержать один элемент")
-	require.Equal(t, expectedJoin, mods[0], "Ожидается правильный join мод")
+	require.Equal(t, expectedColumn, column)
+	require.Len(t, mods, 1)
+	require.Equal(t, expectedJoin, mods[0])
 
 	column = joinTableNameAndColumn("", "name", nil)
 	expectedColumn = "\"name\""
 
-	require.Equal(t, expectedColumn, column, "joinTableNameAndColumn(\"\", \"name\") должен вернуть ожидаемое значение")
+	require.Equal(t, expectedColumn, column)
 }
 
-func TestToPluralize(t *testing.T) {
+func TestTable_ToPluralize(t *testing.T) {
 	tests := []struct {
+		name     string
 		word     string
 		expected string
 	}{
-		{"box", "boxes"},
-		{"city", "cities"},
-		{"leaf", "leaves"},
-		{"man", "men"},
-		{"woman", "women"},
-		{"dog", "dogs"},
+		{"Pluralize regular word", "box", "boxes"},
+		{"Pluralize word ending with 'y'", "city", "cities"},
+		{"Pluralize irregular noun (leaf)", "leaf", "leaves"},
+		{"Pluralize irregular noun (man)", "man", "men"},
+		{"Pluralize irregular noun (woman)", "woman", "women"},
+		{"Pluralize regular noun", "dog", "dogs"},
 	}
 
 	for _, tt := range tests {
-		plural := toPluralize(tt.word)
-
-		require.Equal(t, tt.expected, plural, "toPluralize(%v) должен вернуть %v", tt.word, tt.expected)
+		t.Run(tt.name, func(t *testing.T) {
+			plural := toPluralize(tt.word)
+			require.Equal(t, tt.expected, plural)
+		})
 	}
 }
 
-func TestToSnakeCase(t *testing.T) {
+func TestTable_ToSnakeCase(t *testing.T) {
 	tests := []struct {
+		name     string
 		input    string
 		expected string
 	}{
-		{"UserName", "user_name"},
-		{"FirstName", "first_name"},
-		{"userID", "user_i_d"},
-		{"simple", "simple"},
+		{"Convert UserName to snake_case", "UserName", "user_name"},
+		{"Convert FirstName to snake_case", "FirstName", "first_name"},
+		{"Convert userID to snake_case", "userID", "user_i_d"},
+		{"Leave simple unchanged", "simple", "simple"},
 	}
 
 	for _, tt := range tests {
-		snake := toSnakeCase(tt.input)
-		require.Equal(t, tt.expected, snake, "toSnakeCase(%v) должен вернуть %v", tt.input, tt.expected)
+		t.Run(tt.name, func(t *testing.T) {
+			snake := toSnakeCase(tt.input)
+			require.Equal(t, tt.expected, snake)
+		})
 	}
 }
 
