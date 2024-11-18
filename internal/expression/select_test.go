@@ -10,56 +10,56 @@ import (
 
 var _ expression = &Select{}
 
-func TestNewSelect(t *testing.T) {
+func TestSelect_NewSelect(t *testing.T) {
 	s := NewSelect("id")
 	expectedColumns := []string{"id"}
 
-	require.Equal(t, expectedColumns, s.Select(), "The selected columns should match the expected columns")
+	require.Equal(t, expectedColumns, s.Select())
 
 	s = NewSelect("id", "name", "age")
 	expectedColumns = []string{"id", "name", "age"}
 
-	require.Equal(t, expectedColumns, s.Select(), "The selected columns should match the expected columns")
+	require.Equal(t, expectedColumns, s.Select())
 }
 
-func TestSelect(t *testing.T) {
+func TestSelect_Select(t *testing.T) {
 	s := NewSelect("id")
 	expected := []string{"id"}
 
-	require.Equal(t, expected, s.Select(), "The selected columns should match the expected columns")
+	require.Equal(t, expected, s.Select())
 
 	s = NewSelect("id", "name", "age")
 	expected = []string{"id", "name", "age"}
 
-	require.Equal(t, expected, s.Select(), "The selected columns should match the expected columns")
+	require.Equal(t, expected, s.Select())
 }
 
 func TestSelect_QueryMod(t *testing.T) {
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err, "Failed to connect to the in-memory database")
+	require.NoError(t, err)
 
 	_ = db
 
 	s := NewSelect("id")
 	expectedQueryMod := []qm.QueryMod{qm.Select("id")}
 
-	require.Equal(t, expectedQueryMod, s.QueryMod(), "Expected and actual QueryMod should be equal for single column select")
+	require.Equal(t, expectedQueryMod, s.QueryMod())
 
 	s = NewSelect("id", "name", "age")
 	expectedQueryMod = []qm.QueryMod{qm.Select("id", "name", "age")}
 
-	require.Equal(t, expectedQueryMod, s.QueryMod(), "Expected and actual QueryMod should be equal for multiple columns select")
+	require.Equal(t, expectedQueryMod, s.QueryMod())
 }
 
 func TestSelect_ToString(t *testing.T) {
 	s := NewSelect("id")
 	expectedString := "Select id"
 
-	require.Equal(t, expectedString, s.ToString(), "Expected and actual Select string should be equal for single column select")
+	require.Equal(t, expectedString, s.ToString())
 
 	s = NewSelect("id", "name", "age")
 	expectedString = "Select id, name, age"
 
-	require.Equal(t, expectedString, s.ToString(), "Expected and actual Select string should be equal for multiple columns select")
+	require.Equal(t, expectedString, s.ToString())
 }
