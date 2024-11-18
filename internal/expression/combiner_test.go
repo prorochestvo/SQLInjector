@@ -8,7 +8,7 @@ import (
 
 var _ expression = &Or{}
 
-func TestNewCombinerOR(t *testing.T) {
+func TestCombiner_NewCombinerOR(t *testing.T) {
 	w1 := NewWhere("age", ">", "28")
 	w2 := NewWhere("name", "==", "Tom")
 	w3 := NewWhere("salary", ">", "5000")
@@ -37,7 +37,7 @@ func TestCombiner_QueryMod(t *testing.T) {
 	t.Skip("ignore at the moment")
 }
 
-func TestOr_ToString(t *testing.T) {
+func TestCombiner_ToString(t *testing.T) {
 	w1 := NewWhere("age", ">", "28")
 	w2 := NewWhere("name", "==", "Tom")
 	w3 := NewWhere("salary", ">", "5000")
