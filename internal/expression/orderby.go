@@ -64,6 +64,7 @@ type OrderBy struct {
 	Table     string
 	Column    string
 	direction Direction
+	Direction string
 }
 
 func (o *OrderBy) OrderBy() string {
