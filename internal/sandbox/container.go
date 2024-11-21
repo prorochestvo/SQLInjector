@@ -152,7 +152,7 @@ func (tc *Container) Dialect() internal.Dialect {
 	return tc.dialectName
 }
 
-func (tc *Container) NewConnection() (internal.Dispatcher, error) {
+func (tc *Container) NewConnection() (internal.Vault, error) {
 	db, err := sql.Open(string(tc.dialectName), tc.dialectSource)
 	if err != nil || db == nil {
 		if err == nil {

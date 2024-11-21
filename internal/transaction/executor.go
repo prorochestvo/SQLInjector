@@ -10,8 +10,8 @@ import (
 )
 
 // Rollback executes and rollbacks the given actions in the one transaction of the given options.
-func Rollback(ctx context.Context, d internal.Dispatcher, a actions) (res interface{}, err error) {
-	t, err := d.BeginTx(ctx, nil)
+func Rollback(ctx context.Context, vault internal.Vault, a actions) (res interface{}, err error) {
+	t, err := vault.BeginTx(ctx, nil)
 	if err != nil {
 		return
 	}
@@ -20,16 +20,16 @@ func Rollback(ctx context.Context, d internal.Dispatcher, a actions) (res interf
 
 	res, err = a.exec(t)
 
-	//if err == nil {
-	//	err = t.Rollback()
-	//}
+	if err == nil {
+		err = t.Rollback()
+	}
 
 	return
 }
 
 // Commit executes and commits the given actions in the one transaction of the given options.
-func Commit(ctx context.Context, d internal.Dispatcher, a actions) (res interface{}, err error) {
-	t, err := d.BeginTx(ctx, nil)
+func Commit(ctx context.Context, vault internal.Vault, a actions) (res interface{}, err error) {
+	t, err := vault.BeginTx(ctx, nil)
 	if err != nil {
 		return
 	}

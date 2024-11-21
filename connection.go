@@ -8,20 +8,20 @@ import (
 	"time"
 )
 
-func NewPostgreSQL(source string, parameters ...Parameter) (internal.Dispatcher, error) {
+func NewPostgreSQL(source string, parameters ...Parameter) (internal.Vault, error) {
 	return openSqlDB(internal.DialectPostgreSQL, source, parameters...)
 }
 
-func NewMySQL(source string, parameters ...Parameter) (internal.Dispatcher, error) {
+func NewMySQL(source string, parameters ...Parameter) (internal.Vault, error) {
 	return openSqlDB(internal.DialectMySQL, source, parameters...)
 }
 
-func NewSQLite3(source string, parameters ...Parameter) (internal.Dispatcher, error) {
+func NewSQLite3(source string, parameters ...Parameter) (internal.Vault, error) {
 	return openSqlDB(internal.DialectSQLite3, source, parameters...)
 }
 
 // openSqlDB creates a new database session.
-func openSqlDB(dialect internal.Dialect, source string, parameters ...Parameter) (internal.Dispatcher, error) {
+func openSqlDB(dialect internal.Dialect, source string, parameters ...Parameter) (internal.Vault, error) {
 	db, err := sql.Open(string(dialect), source)
 	if err != nil || db == nil {
 		if err == nil {
@@ -46,16 +46,16 @@ func openSqlDB(dialect internal.Dialect, source string, parameters ...Parameter)
 }
 
 // Stats returns database statistics.
-func Stats(d internal.Dispatcher) string {
+func Stats(vault internal.Vault) string {
 	res := ""
 
-	if i, ok := d.(interface {
+	if i, ok := vault.(interface {
 		Stats() sql.DBStats
 	}); ok && i != nil {
 		state := i.Stats()
-		res += fmt.Sprintf("Connections: %d / %d; ", state.OpenConnections, state.MaxOpenConnections)
-		res += fmt.Sprintf("InUse: %v (idle: %d / %d); ", state.InUse, state.Idle, state.MaxIdleClosed)
-		res += fmt.Sprintf("WaitCount: %d; ", state.WaitCount)
+		res += fmt.Sprintf("Connections: %vault / %vault; ", state.OpenConnections, state.MaxOpenConnections)
+		res += fmt.Sprintf("InUse: %v (idle: %vault / %vault); ", state.InUse, state.Idle, state.MaxIdleClosed)
+		res += fmt.Sprintf("WaitCount: %vault; ", state.WaitCount)
 		res += fmt.Sprintf("WaitDuration: %s; ", state.WaitDuration)
 		res += fmt.Sprintf("MaxIdleTimeClosed: %v;", state.MaxIdleTimeClosed)
 	}
@@ -64,10 +64,10 @@ func Stats(d internal.Dispatcher) string {
 }
 
 // Burden returns database capacity of connections.
-func Burden(d internal.Dispatcher) float64 {
+func Burden(vault internal.Vault) float64 {
 	res := 0.0
 
-	if i, ok := d.(interface {
+	if i, ok := vault.(interface {
 		Stats() sql.DBStats
 	}); ok && i != nil {
 		state := i.Stats()
@@ -135,11 +135,11 @@ func MaxOpenConnection(limit int) Parameter {
 
 // Parameter is a database connection parameter.
 type Parameter interface {
-	Apply(internal.Dispatcher) error
+	Apply(internal.Vault) error
 }
 
 type parameter func(interface{}) error
 
-func (p *parameter) Apply(db internal.Dispatcher) error {
+func (p *parameter) Apply(db internal.Vault) error {
 	return (*p)(db)
 }

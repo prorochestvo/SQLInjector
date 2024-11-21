@@ -10,14 +10,12 @@ import (
 	"time"
 )
 
-func State(m Instruction, d internal.Dispatcher, tableName string) (exists Instruction, nonExists Instruction, undefined Instruction, err error) {
-	t, err := d.Begin()
+func State(m Instruction, vault internal.Vault, tableName string) (exists Instruction, nonExists Instruction, undefined Instruction, err error) {
+	t, err := vault.Begin()
 	if err != nil {
 		return
 	}
-	defer func(t internal.Transaction) {
-		err = errors.Join(err, t.Rollback())
-	}(t)
+	defer func(t internal.Transaction) { err = errors.Join(err, t.Rollback()) }(t)
 
 	err = createMigrationTable(t, tableName)
 	if err != nil {
@@ -60,8 +58,8 @@ func State(m Instruction, d internal.Dispatcher, tableName string) (exists Instr
 	return
 }
 
-func Plan(m Instruction, d internal.Dispatcher, tableName string) (items Instruction, err error) {
-	t, err := d.Begin()
+func Plan(m Instruction, vault internal.Vault, tableName string) (items Instruction, err error) {
+	t, err := vault.Begin()
 	if err != nil {
 		return
 	}
@@ -105,8 +103,8 @@ func Plan(m Instruction, d internal.Dispatcher, tableName string) (items Instruc
 	return
 }
 
-func Up(m Instruction, d internal.Dispatcher, tableName string) (err error) {
-	t, err := d.Begin()
+func Up(m Instruction, vault internal.Vault, tableName string) (err error) {
+	t, err := vault.Begin()
 	if err != nil {
 		return err
 	}
@@ -166,8 +164,8 @@ func Up(m Instruction, d internal.Dispatcher, tableName string) (err error) {
 	return
 }
 
-func Down(m Instruction, d internal.Dispatcher, tableName string) (err error) {
-	t, err := d.Begin()
+func Down(m Instruction, vault internal.Vault, tableName string) (err error) {
+	t, err := vault.Begin()
 	if err != nil {
 		return err
 	}
