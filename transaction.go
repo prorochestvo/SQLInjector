@@ -9,22 +9,22 @@ import (
 )
 
 // Rollback executes and rollbacks the given actions in the one transaction.
-func Rollback[T any](vault internal.Vault, actions ...Action[T]) (T, error) {
+func Rollback[T any](vault Vault, actions ...Action[T]) (T, error) {
 	return transmute(vault, true, actions...)
 }
 
 // TransactionRollback executes and rollbacks the given actions in the one transaction.
-func TransactionRollback(vault internal.Vault, actions ...transaction.Action) (interface{}, error) {
+func TransactionRollback(vault Vault, actions ...transaction.Action) (interface{}, error) {
 	return transaction.Rollback(context.Background(), vault, actions)
 }
 
 // Commit executes and commits the given actions in the one transaction.
-func Commit[T any](vault internal.Vault, actions ...Action[T]) (T, error) {
+func Commit[T any](vault Vault, actions ...Action[T]) (T, error) {
 	return transmute(vault, false, actions...)
 }
 
 // TransactionCommit executes and commits the given actions in the one transaction.
-func TransactionCommit(vault internal.Vault, actions ...transaction.Action) (interface{}, error) {
+func TransactionCommit(vault Vault, actions ...transaction.Action) (interface{}, error) {
 	return transaction.Commit(context.Background(), vault, actions)
 }
 

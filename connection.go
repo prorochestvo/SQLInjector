@@ -8,20 +8,24 @@ import (
 	"time"
 )
 
-func NewPostgreSQL(source string, parameters ...Parameter) (internal.Vault, error) {
+type Vault interface {
+	internal.Vault
+}
+
+func NewPostgreSQL(source string, parameters ...Parameter) (Vault, error) {
 	return openSqlDB(internal.DialectPostgreSQL, source, parameters...)
 }
 
-func NewMySQL(source string, parameters ...Parameter) (internal.Vault, error) {
+func NewMySQL(source string, parameters ...Parameter) (Vault, error) {
 	return openSqlDB(internal.DialectMySQL, source, parameters...)
 }
 
-func NewSQLite3(source string, parameters ...Parameter) (internal.Vault, error) {
+func NewSQLite3(source string, parameters ...Parameter) (Vault, error) {
 	return openSqlDB(internal.DialectSQLite3, source, parameters...)
 }
 
 // openSqlDB creates a new database session.
-func openSqlDB(dialect internal.Dialect, source string, parameters ...Parameter) (internal.Vault, error) {
+func openSqlDB(dialect internal.Dialect, source string, parameters ...Parameter) (Vault, error) {
 	db, err := sql.Open(string(dialect), source)
 	if err != nil || db == nil {
 		if err == nil {

@@ -2,7 +2,6 @@ package sqlinjector
 
 import (
 	"fmt"
-	"github.com/prorochestvo/sqlinjector/internal"
 	"github.com/prorochestvo/sqlinjector/internal/sandbox"
 	"math/rand"
 )
@@ -10,7 +9,7 @@ import (
 // NewSandboxOfPostgreSQL create new connection PostgreSQL via docker container.
 // technical function for testing purposes of external packages.
 // closing the container is necessary to free the docker resources.
-func NewSandboxOfPostgreSQL(port int, migrations ...Migration) (internal.Vault, error) {
+func NewSandboxOfPostgreSQL(port int, migrations ...Migration) (Vault, error) {
 	db, err := poll.NewPostgreSQL(port)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create postgresql container: %w", err)
@@ -42,7 +41,7 @@ func NewSandboxOfPostgreSQL(port int, migrations ...Migration) (internal.Vault, 
 // NewSandboxOfMySQL create new connection MySQL via docker container.
 // technical function for testing purposes of external packages.
 // closing the container is necessary to free the docker resources.
-func NewSandboxOfMySQL(port int, migrations ...Migration) (internal.Vault, error) {
+func NewSandboxOfMySQL(port int, migrations ...Migration) (Vault, error) {
 	db, err := poll.NewMySQL(port)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create postgresql container: %w", err)
@@ -76,7 +75,7 @@ func NewSandboxOfMySQL(port int, migrations ...Migration) (internal.Vault, error
 // NewSandboxOfSQLite3 create new connection SQLite into memory.
 // technical function for testing purposes of external packages
 // closing the container is necessary to free the docker resources.
-func NewSandboxOfSQLite3(migrations ...Migration) (internal.Vault, error) {
+func NewSandboxOfSQLite3(migrations ...Migration) (Vault, error) {
 	db, err := poll.NewSQLite3()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sqlite container: %w", err)
