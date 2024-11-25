@@ -76,13 +76,41 @@ func TestParseMigration(t *testing.T) {
 		require.Equal(t, mDown01+"\n\n"+mDown02, m.down)
 	})
 	t.Run("Empty", func(t *testing.T) {
-		t.Skip("not implemented")
+		n := "M002"
+		m, err := parseMigration(n, bytes.NewReader([]byte(""+MigrationCommandPrefix+"")))
+		require.Error(t, err)
+		require.Equal(t, "ERROR: incomplete migration command", err.Error())
+		require.Nil(t, m)
 	})
 	t.Run("UpEmptyOnly", func(t *testing.T) {
-		t.Skip("not implemented")
+		n := "M003"
+		mDown01 := `DROP EXTENSION IF EXISTS "uuid-osSP";`
+		mDown02 := `DROP EXTENSION IF EXISTS "pgcrypto";`
+		input := bytes.NewReader([]byte(
+			MigrationCommandPrefix + " down\n" + mDown01 + "\n\n" + mDown02 + "\n\n",
+		))
+		m, err := parseMigration(n, input)
+
+		require.NoError(t, err)
+		require.NotNil(t, m)
+		require.Equal(t, n, m.id)
+		require.Equal(t, "", m.up)
+		require.Equal(t, mDown01+"\n\n"+mDown02, m.down)
 	})
 	t.Run("DownEmptyOnly", func(t *testing.T) {
-		t.Skip("not implemented")
+		n := "M004"
+		mUp01 := `CREATE EXTENSION IF NOT EXISTS "uuid-osSP";`
+		mUp02 := `CREATE EXTENSION IF NOT EXISTS "pgcrypto";`
+		input := bytes.NewReader([]byte(
+			MigrationCommandPrefix + " up\n" + mUp01 + "\n\n" + mUp02 + "\n\n",
+		))
+		m, err := parseMigration(n, input)
+
+		require.NoError(t, err)
+		require.NotNil(t, m)
+		require.Equal(t, n, m.id)
+		require.Equal(t, mUp01+"\n\n"+mUp02, m.up)
+		require.Equal(t, "", m.down)
 	})
 }
 
