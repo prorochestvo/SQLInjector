@@ -567,6 +567,8 @@ func toLowerTableName(str string) string {
 	// reduce the plurality of the table name
 	if strings.HasSuffix(str, "ies") {
 		str = str[:len(str)-3] + "y"
+	} else if strings.HasSuffix(str, "es") {
+		str = str[:len(str)-1]
 	} else if strings.HasSuffix(str, "s") {
 		str = str[:len(str)-1]
 	}
