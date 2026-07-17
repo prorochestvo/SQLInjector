@@ -77,80 +77,41 @@ Direct deps live in `go.mod`: SQLBoiler (+ `queries/qm`, the expression builder'
 
 Library surfaces return plain `error` (no `PublicError` user/internal split). Wrap with `fmt.Errorf("...: %w", err)` to preserve the cause for `errors.Is`/`As`; aggregate teardown failures with `errors.Join` (e.g. an op error joined with the `Rollback()`/`Close()` error in `defer`) so a secondary failure is never swallowed. No exported sentinels or custom error types — callers match on wrapped causes.
 
-## Code Organization
+## Conventions
 
-Public surface lives in the root package; `internal/` holds the dialect-specific machinery. Prefer `internal/` over a public `pkg/` — there is no external (out-of-module) consumer to promise an API to. Organize by concern (flat, per-concern split), not by launcher. Distinguish coincidental similarity (duplicate the few trivial lines, let each site diverge) from a genuine cross-cutting invariant (centralize once).
+Generic Go conventions (style, file declaration order, test structure, test-only
+code placement, godoc, error discipline, code organization) come from the
+`stack-go` plugin skills — they are not restated here. Project-specific constraints:
 
-## File Declaration Order
-
-Public surface at the top, private internals at the bottom — a reader sees everything important first. Per file built around one object:
-
-1. Exported `const`/`var` + `New<Object>` constructor(s).
-2. The struct definition.
-3. Its methods (prefer alphabetical).
-4. Unexported `const`/`var`.
-5. Auxiliary unexported support structs.
-6. Unexported methods/functions (prefer alphabetical).
-
-Multiple structs: same layout, primary struct first (two large objects usually means split the file). No-object files (free functions + a config type): same spirit — exported on top, then unexported. Treat a violating file as something to fix.
-
-## Constraints
-
+- **Public surface lives in the root package; `internal/` holds the dialect-specific
+  machinery.** There is no external consumer to justify a `pkg/`.
 - **Forbidden imports**: never introduce `github.com/mattn/go-sqlite3` (or any other
-  CGO-dependent driver) — it would force `CGO_ENABLED=1` and break the pure-Go build. The
-  SQLite path must stay on `github.com/glebarez/sqlite`. More generally, keep `go.mod` free
-  of CGO-dependent modules.
-- **Testing**: Use `github.com/stretchr/testify`; run tests with `-race`; parallel
-  subtests preferred where there's no shared mutable state. Tests that touch
-  PostgreSQL/MySQL need a running Docker daemon (`testcontainers-go`); SQLite tests do not.
-- **One `Test*` per method, scenarios as subtests**: each tested method/function gets
-  exactly one top-level test function named after it (e.g. `TestEncode` for `Encode`),
-  and every scenario for that method lives as a `t.Run("descriptive name", ...)`
-  subtest inside it. Do **not** create separate top-level tests like
-  `TestEncode_EmptyInput`, `TestEncode_Unicode`, `TestEncode_Error` — these belong
-  as subtests of a single `TestEncode`. Methods on a type follow the same rule with
-  the standard `TestType_Method` form (e.g. `TestUser_Validate`).
-  ```go
-  func TestEncode(t *testing.T) {
-      t.Parallel()
-      t.Run("empty input returns empty string", func(t *testing.T) { t.Parallel(); /* ... */ })
-      t.Run("returns error on invalid byte", func(t *testing.T) { t.Parallel(); /* ... */ })
-  }
-  ```
-- **No CGO**: `CGO_ENABLED=0` must be set for all build and test commands. The whole point
-  of the SQLite driver choice is to keep this true.
-- **Compile-time interface checks**: Every mock/stub struct in test files must have a
-  `var _ interfaceName = &mockStruct{}` assertion at the top of the file.
-- **No section-divider comments**: Do not use `// --- section ---` or `// ----` style
-  separator comments. Let the code structure speak for itself.
-- **No skipped errors**: Never use `_` to discard error return values in production or
-  test code. Always capture the error and assert/check it. The only exceptions are
-  `fmt.Fprint*` writes to loggers, `Rollback()` calls in error-recovery paths, and
-  resource `.Close()` in `t.Cleanup` / `defer`.
-- **Comments**: all comments are in English and start with a lowercase first word
-  (e.g. `// wrap the driver error so callers can match on it`).
-- **Godoc on exported identifiers**: every exported Type/Func/Method/Var/Const gets a doc comment starting with its name and ending with a period; exactly one `// Package <name> ...` per package. Skip it if it would only restate the signature. Document concurrency guarantees, lifecycle contracts ("caller must Close"), and error-sentinel conditions; preserve existing WHY-comments verbatim; don't bulk-comment private helpers.
-- **Scratch in `./tmp/`**: keep throwaway artifacts, fixtures, and intermediate files in
-  `./tmp/` rather than the repo root.
+  CGO-dependent driver) — it would force `CGO_ENABLED=1` and break the pure-Go build.
+  The SQLite path must stay on `github.com/glebarez/sqlite`.
+- **Docker for DB tests**: PostgreSQL/MySQL tests need a running Docker daemon
+  (`testcontainers-go`); SQLite tests run in-memory without it.
+- **No Makefile**: gates run as raw Go commands (`gofmt -l .`,
+  `CGO_ENABLED=0 go vet ./...`, `CGO_ENABLED=0 go test -race ./...`). Scratch stays
+  in `./tmp/`, never the repo root.
 
-## Planning Workflow
+## Working agreement
 
-Non-trivial work gets a Markdown plan file in `plans/` before code. One plan per concern; if implementation diverges, update the plan before completing it.
+All non-trivial work follows the plan-first pipeline:
 
-- **Active** `plans/NNN-slug.md` — next `NNN` = highest existing prefix across `plans/`, `completed/`, `history/`, +1.
-- **Completed** `plans/completed/YYMMDD.NNNN.slug.md` — `NNNN` resets daily. Move here (`mv`) only once acceptance criteria are met and `make test` passes.
-- **Archived** `plans/history/` — abandoned/superseded plans keep their original `NNN-` name.
+1. **Plan** — the `architect` agent writes `plans/NNN-slug.md` (create via the
+   `pipeline:new-plan` skill). No source edits before a plan exists.
+2. **Implement** — the `engineer` agent executes the plan's tasks with tests.
+3. **Review** — three `reviewer` agents launched in parallel in ONE message, each
+   prompt naming its lens (A: correctness & tests, B: security & operations,
+   C: performance & architecture) and the changed files. Full three-lens fan-out is
+   mandatory on the first review; the post-fix re-review is ONE solo reviewer scoped
+   to the changed lines.
+4. **Gate** — `gofmt -l .` clean, `go vet` and `go test -race ./...` green (with
+   `CGO_ENABLED=0`) before review; a red tree goes to the `testdoctor` agent first.
+5. **Complete** — the orchestrator merges the three reports, deduplicates, resolves
+   conflicting verdicts (naming what was rejected and why; the user has final say).
+   P0/P1 findings loop back to the engineer. Only when every P0/P1 is fixed or
+   explicitly accepted: move the plan via the `pipeline:complete-plan` skill.
 
-Plan sections: Overview, Assumptions, Tasks (each: Description, Acceptance Criteria, Pitfalls & edge cases, Complexity Easy/Medium/Hard), Execution Order, Risks, Trade-offs.
-
-## Agent Pipeline
-
-Non-trivial tasks run architect -> engineer -> reviewer, no stage skipped:
-
-1. `gocode-architect` — writes/updates the plan file in `plans/` (see Planning Workflow).
-2. `gocode-engineer` — implements the plan and writes tests for new code. `make test` must be green before review; if red, hand logs to `gocode-testdoctor` first.
-3. `gocode-reviewer` x3 in parallel (one message, three tool calls), each a self-contained prompt naming its lens and what to SKIP: (A) correctness & tests, (B) security & operations, (C) performance & architecture. Deliverable per lens: P0/P1/P2/P3 findings with `file:line` + patch sketch, <=600 words. The full three-lens fan-out is mandatory on the FIRST review.
-
-`gocode-testdoctor` is invoked on demand whenever tests fail; it makes the minimal fix, no redesign.
-
-The orchestrator (main session) synthesises the three reports, resolves conflicts (names the rejected suggestion; user has final say), and gates completion. P0/P1 go back to the engineer; after a fix, re-review is a SINGLE pass scoped to the changed lines, not another fan-out. Once every P0/P1 is resolved, move the plan to `plans/completed/`.
+Plans live in `plans/` (active), `plans/completed/` (shipped, `YYMMDD.NNNN.slug.md`),
+`plans/history/` (abandoned/superseded). One plan per concern.

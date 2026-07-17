@@ -49,3 +49,6 @@ init/models/*
 store.toml
 .env**
 !/deployments/docker/.env
+# Claude Code: commit only project settings
+.claude/*
+!.claude/settings.json
